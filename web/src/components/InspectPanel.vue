@@ -1,24 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useMapStore } from '../stores/map'
-import { usePreviewStore } from '../stores/preview'
 import { displayName, infoRows } from '../viewer/names'
-import { outcomeLabel } from '../viewer/outcomes'
 import TargetChoice from './TargetChoice.vue'
 import PiecePicture from './PiecePicture.vue'
 import FoldSection from './FoldSection.vue'
 import GroupSelect from './GroupSelect.vue'
 
 const store = useMapStore()
-const preview = usePreviewStore()
 
 const info = computed(() => (store.selected === null ? null : store.infos[store.selected]))
 const single = computed(() => !!info.value && store.selection.length <= 1)
-
-const becomes = computed(() => {
-  const decision = store.selected === null ? undefined : preview.decisions?.[store.selected]
-  return decision && { label: outcomeLabel(decision.outcome) + (decision.picked ? ' (target)' : ''), rule: decision.rule }
-})
 
 // instances come first in store.infos; boxes and cones have no pieces
 const materials = computed(() => {
@@ -47,10 +39,6 @@ const details = computed(() => {
           {{ displayName(info) }}
           <span :class="$style.info" :title="details" aria-label="Properties">i</span>
         </h2>
-        <dl v-if="becomes" :class="$style.properties">
-          <dt :title="becomes.rule ? `decided by rule ${becomes.rule}` : undefined" :class="{ [$style.hinted]: becomes.rule }">Becomes</dt>
-          <dd>{{ becomes.label }}</dd>
-        </dl>
       </template>
       <TargetChoice :class="{ [$style.manual]: single }" />
     </div>
@@ -95,31 +83,6 @@ const details = computed(() => {
   color: var(--strong);
 }
 
-.properties {
-  display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
-  gap: 2px 8px;
-  margin: 0;
-}
-
-.properties dt {
-  color: var(--muted);
-}
-
-.properties dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-family: var(--mono);
-  font-size: 11px;
-  line-height: 16px;
-}
-
-.properties .hinted {
-  text-decoration: underline dotted;
-  text-underline-offset: 2px;
-  cursor: default;
-}
-
 .fold {
   display: flex;
   grid-column: 1 / -1;
@@ -150,10 +113,6 @@ const details = computed(() => {
   transform: rotate(90deg);
 }
 
-
-.properties .list {
-  grid-column: 2;
-}
 
 .actions {
   display: flex;

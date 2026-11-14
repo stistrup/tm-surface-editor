@@ -31,6 +31,8 @@ internal sealed partial class ConversionPreview(string dataDir)
     {
         var ground = (flags & BlockFlags.Ground) != 0;
         if (run.Shapes.IsTerrain(name)) return System.Text.RegularExpressions.Regex.IsMatch(name, "Lake|Sea|Water|River") ? "shore" : "terrain";
+        // gate waypoints keep their trigger only native: snow under them on the ground, else nothing
+        if (name.StartsWith("Gate") && run.Shapes.Waypoint(name) is not null) return ground ? "gateground" : "";
         if (run.Shapes.Waypoint(name) is not null) return "waypoints";
         if (BlockNames.IsGameplayBlock(name)) return (BlockNames.IsReactor(name) ? "reactor" : "special") + (ground ? "ground" : "");
         var scenery = BlockRules.IsScenery(name, flags, run) || rule is not null && BlockRules.SceneryRules.Contains(rule);
@@ -296,6 +298,8 @@ internal sealed partial class ConversionPreview(string dataDir)
             foreach (var info in part.Instances.Select(i => i.Info))
             {
                 if (info.TryGetValue("block", out var b) && blockOrigin.TryGetValue(converted[(int)b], out var ob)) { hiddenBlocks.Add(ob); info["originBlock"] = ob; }
+                // a gate's ground goes with the gate
+                if (info.TryGetValue("block", out b) && run.GroundOf.TryGetValue(converted[(int)b], out var gate) && blockOrigin.TryGetValue(gate, out var og)) info["originBlock"] = og;
                 if (info.TryGetValue("item", out var it) && itemOrigin.TryGetValue(convertedItems[(int)it], out var oi)) { hiddenItems.Add(oi); info["originItem"] = oi; }
             }
             var addedCount = convertedItems.Count(o => !itemOrigin.ContainsKey(o));
@@ -322,6 +326,8 @@ internal sealed partial class ConversionPreview(string dataDir)
     {
         var d = Of(run, before.Blocks[i]);
         var (name, kind) = (before.Names[i], KindOf(run, before.Names[i], before.Flags[i], before.PillarOrFree[i], d.Rule));
+        // no kind: nothing to pick
+        if (run.DataRules.Unsupported(name)) return d with { Key = before.Keys[i], Group = groups.UnsupportedPath };
         return d with
         {
             Kind = kind,
@@ -341,13 +347,15 @@ internal sealed partial class ConversionPreview(string dataDir)
             : new("unchanged", null, null);
         var itemKey = ItemKey(id, position);
         // no kind: nothing to pick
-        if (run.DataRules.Untouched(id)) return d with { Key = itemKey };
+        if (run.DataRules.Unsupported(id)) return d with { Key = itemKey, Group = groups.UnsupportedPath };
+        // gate waypoints: an ice copy has no trigger
+        if (run.Shapes.ItemWaypoint(id) is { } waypoint) return d with { Key = itemKey, Group = groups.PathOf("", id, waypoint, tree: false) };
         return d with
         {
             Kind = "items",
             Key = itemKey,
             Picked = rulesNow.Pieces.GetValueOrDefault(Normal(itemKey)),
-            Group = groups.PathOf("items", id, null, tree: ItemSwaps.CoverSwap(run, id) is not null),
+            Group = groups.PathOf("items", id, run.Shapes.ItemWaypoint(id), tree: ItemSwaps.CoverSwap(run, id) is not null),
         };
     }
 
@@ -387,6 +395,8 @@ internal sealed partial class ConversionPreview(string dataDir)
         if (run.Skinned.Contains(block)) return new("skin", rule, null);
         if (run.Replaced.Contains(block)) return new("item", rule, null);
         if (run.EngineOffGates.Contains(block)) return new("removed", rule, null);
+        // native in the air, its ground a custom block on the cell below
+        if (run.CoveredGameplay?.Values.Any(g => g.Block == block) == true) return new("custom", rule, null);
         if (run.Renamed.Contains(block)) return new("twin", rule, block.Name);
         // tops iced into a custom block are still a tops-only change
         if (run.Topped.Contains(block)) return new("tops", rule, custom?.Ident.Id);

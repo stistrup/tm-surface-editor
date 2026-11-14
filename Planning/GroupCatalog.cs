@@ -10,7 +10,8 @@ internal sealed record GroupCatalog(Dictionary<string, GroupCatalog.Method> Meth
 
     public sealed record Toggle(string Label, string From, string To);
 
-    public sealed record Match(List<string>? Kinds, List<string>? Waypoints, string? Name, bool Trees);
+    // unsupported: takes the notSupported pieces (swaps.jsonc), and only those
+    public sealed record Match(List<string>? Kinds, List<string>? Waypoints, string? Name, bool Trees, bool Unsupported);
 
     public sealed record Group(string Id, string Label, List<string>? Methods, List<Toggle>? Toggles, Match? Match, List<Group>? Children);
 
@@ -39,6 +40,11 @@ internal sealed record GroupCatalog(Dictionary<string, GroupCatalog.Method> Meth
             return new Node(path, g.Label, own, ownToggles, Nodes(g.Children ?? [], path, own, ownToggles));
         })];
 
+    public string? UnsupportedPath => Paths(Groups, "").FirstOrDefault(p => p.Group.Match?.Unsupported == true).Path;
+
+    private static IEnumerable<(string Path, Group Group)> Paths(List<Group> groups, string parent)
+        => groups.SelectMany(g => (parent == "" ? g.Id : $"{parent}/{g.Id}") is var path ? Paths(g.Children ?? [], path).Prepend((path, g)) : []);
+
     // the first leaf that takes the piece; null: no group
     public string? PathOf(string kind, string name, string? waypoint, bool tree) => Find(Groups, "", kind, name, waypoint, tree);
 
@@ -52,7 +58,7 @@ internal sealed record GroupCatalog(Dictionary<string, GroupCatalog.Method> Meth
                 if (Find(children, path, kind, name, waypoint, tree) is { } inner) return inner;
                 continue;
             }
-            if (g.Match is { } m && Takes(m, kind, name, waypoint, tree)) return path;
+            if (g.Match is { Unsupported: false } m && Takes(m, kind, name, waypoint, tree)) return path;
         }
         return null;
     }

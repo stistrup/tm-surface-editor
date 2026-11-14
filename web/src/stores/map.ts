@@ -47,22 +47,55 @@ export const useMapStore = defineStore('map', () => {
     set: (index) => (selection.value = index === null ? [] : [index]),
   })
 
+  // an expandable gate is one object over several cells: the same block, same direction, in touching cells
+  const cellKey = (info: InstanceInfo) => `${info.name}|${info.direction}|${(info.cell as number[]).join(',')}`
+  const gateCells = computed(() => {
+    const cells = new Map<string, number>()
+    infos.value.forEach((info, i) => {
+      if (info.kind === 'block' && info.name.startsWith('GateExpandable') && Array.isArray(info.cell)) cells.set(cellKey(info), i)
+    })
+    return cells
+  })
+  // the piece with the rest of its object, the piece itself last
+  const whole = (index: number): number[] => {
+    const info = infos.value[index]
+    if (info?.kind !== 'block' || !Array.isArray(info.cell) || !gateCells.value.has(cellKey(info))) return [index]
+    const found = new Set([index])
+    const queue = [info.cell as number[]]
+    for (let cell; (cell = queue.pop()); ) {
+      for (const [dx, dy, dz] of [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]) {
+        const next = [cell[0] + dx, cell[1] + dy, cell[2] + dz]
+        const i = gateCells.value.get(`${info.name}|${info.direction}|${next.join(',')}`)
+        if (i === undefined || found.has(i)) continue
+        found.add(i)
+        queue.push(next)
+      }
+    }
+    found.delete(index)
+    return [...found, index]
+  }
+
   // click: just this one (again: none); shift-click: add or remove it
   const pick = (index: number | null, add: boolean) => {
+    if (index === null) {
+      if (!add) selection.value = []
+      return
+    }
+    const all = whole(index)
     if (add) {
-      if (index === null) return
       selection.value = selection.value.includes(index)
-        ? selection.value.filter((i) => i !== index)
-        : [...selection.value, index]
+        ? selection.value.filter((i) => !all.includes(i))
+        : [...selection.value.filter((i) => !all.includes(i)), ...all]
     } else {
-      const only = selection.value.length === 1 && selection.value[0] === index
-      selected.value = only ? null : index
+      const only = selection.value.length === all.length && all.every((i) => selection.value.includes(i))
+      selection.value = only ? [] : all
     }
   }
   const paint = (index: number, add: boolean) => {
-    const has = selection.value.includes(index)
-    if (add && !has) selection.value = [...selection.value, index]
-    else if (!add && has) selection.value = selection.value.filter((i) => i !== index)
+    const all = whole(index)
+    const rest = selection.value.filter((i) => !all.includes(i))
+    const next = add ? [...rest, ...all] : rest
+    if (next.length !== selection.value.length || add && !selection.value.includes(index)) selection.value = next
   }
   const view = shallowRef<MapScene | null>(null)
   const textureLoads = ref(0)

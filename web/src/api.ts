@@ -360,6 +360,16 @@ export interface Groups {
 export const fetchPresets = async (): Promise<Preset[]> => (await check(await fetch('/api/presets'))).json()
 export const fetchGroups = async (): Promise<Groups> => (await check(await fetch('/api/groups'))).json()
 
+// dev mode only: names into notSupported in data/swaps.jsonc
+export const addNotSupported = async (names: string[]): Promise<void> => {
+  await check(await fetch('/api/not-supported', { method: 'POST', body: JSON.stringify({ names }) }))
+}
+
+// dev mode only: the names' own entries go; refused when a pattern takes one
+export const removeNotSupported = async (names: string[]): Promise<void> => {
+  await check(await fetch('/api/supported', { method: 'POST', body: JSON.stringify({ names }) }))
+}
+
 // one undo step each; only: these keys, null: the whole map
 export const applyPreset = (map: string, preset: string, only: string[] | null) => documentCall('apply-preset', map, { preset, only })
 

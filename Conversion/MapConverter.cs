@@ -23,6 +23,7 @@ public sealed class MapConverter(HashSet<string> knownBlocks, ConversionRules da
         items.Style = new ItemStyle(rules.Options.SnowOnZoneSides, rules.Options.SnowOnGroundDeco, rules.SkinLift ?? ItemStyle.DefaultSkinLift, rules.SkinEdge ?? ItemStyle.DefaultSkinEdge);
         Flips.Run(map, shapes, rules);
         CoverFill.ByKind(map, collection, shapes, rules);
+        CoverFill.UnderPickedGates(map, collection, shapes, rules);
         var filled = rules.Options.FillEmptyWithSnow ? CoverFill.Run(map, collection, shapes, rules) : 0;
         var run = new ConversionRun(map, collection, rules, dataRules, knownBlocks, shapes, items, surfaceParents, flatTops);
 

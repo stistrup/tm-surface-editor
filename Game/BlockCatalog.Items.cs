@@ -41,4 +41,18 @@ public sealed partial class BlockCatalog
         lock (itemVariants) itemVariants[file] = found;
         return found;
     }
+
+    private static readonly Dictionary<string, string?> itemWaypoints = [];
+
+    // Start, Checkpoint, Finish, StartFinish; null: none, or not a game item
+    public string? ItemWaypoint(string itemId)
+    {
+        if (ItemFile(itemId) is not { } file) return null;
+        lock (itemWaypoints)
+            if (itemWaypoints.TryGetValue(file, out var known)) return known;
+        var type = Gbx.ParseNode<CGameItemModel>(file).WaypointType;
+        var found = type == CGameItemModel.EWaypointType.None ? null : type.ToString();
+        lock (itemWaypoints) itemWaypoints[file] = found;
+        return found;
+    }
 }

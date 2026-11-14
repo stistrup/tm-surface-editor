@@ -10,7 +10,7 @@ internal static class ItemPlacer
     public static bool Place(ConversionRun run, CGameCtnBlock block, int variant, IReadOnlySet<int> clips, ItemKind kind = ItemKind.None)
     {
         if (run.Items.For(block.Name, block.IsGround, variant, MobilOf(block), clips, kind, Placement.Tilt(block)) is not { } item) return false;
-        if (item == BuiltItem.Nothing) return kind is not (ItemKind.Top or ItemKind.TopOfTwin) && !BlockNames.IsGameplayBlock(block.Name);
+        if (item == BuiltItem.Nothing) return kind is not (ItemKind.Top or ItemKind.TopOfTwin) && !BlockRules.PrefabTrigger(block.Name, run.Shapes);
         Vector3 pos;
         Vec3 rotation;
         if (block.IsFree)

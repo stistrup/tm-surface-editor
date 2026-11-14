@@ -13,8 +13,6 @@ export const outcomes: Record<string, { label: string; color: number | null }> =
   unchanged: { label: 'Unchanged', color: null },
 }
 
-export const outcomeLabel = (outcome: string) => outcomes[outcome]?.label ?? outcome
-
 // where the name says less than the option does
 const optionLabels: Record<string, string> = {
   convertTrees: 'Convert trees on converted blocks',

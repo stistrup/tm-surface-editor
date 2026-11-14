@@ -9,6 +9,7 @@ import FloatingPanel from './FloatingPanel.vue'
 import { useHoverFocus } from '../hoverFocus'
 import FocusEye from './FocusEye.vue'
 import { displayName } from '../viewer/names'
+import { addNotSupported, removeNotSupported } from '../api'
 
 const store = useMapStore()
 const preview = usePreviewStore()
@@ -39,6 +40,8 @@ const pieces = computed(() => {
       const at = c.option ? withOption(combo(c.material, c.way), c.option) : combo(c.material, c.way)
       if (!d.cannot?.includes(c.value) && !can.has(at)) can.set(at, c.value)
     }
+    // only "original" left: nothing to convert it to
+    if (![...can.keys()].some((at) => !at.startsWith('original|'))) return []
     return [{ index, key: d.key, now: preview.picks[d.key] ?? '', can }]
   })
 })
@@ -201,6 +204,29 @@ const revert = () => {
   history.change(() => preview.pick(keys, ''))
 }
 
+const dev = import.meta.env.DEV
+const notSupported = async () => {
+  const names = [...new Set(pieces.value.map((p) => store.infos[p.index]?.name).filter((n): n is string => !!n))]
+  await addNotSupported(names)
+  await preview.run()
+}
+
+// selected pieces on the not supported list (groups.jsonc: group "unsupported")
+const unsupported = computed(() => [
+  ...new Set(store.selection.filter((i) => preview.decisions?.[i]?.group === 'unsupported').map((i) => store.infos[i]?.name).filter((n): n is string => !!n)),
+])
+const refused = ref('')
+watch(() => store.selection, () => (refused.value = ''))
+const supported = async () => {
+  try {
+    await removeNotSupported(unsupported.value)
+  } catch (e) {
+    refused.value = e instanceof Error ? e.message : String(e)
+    return
+  }
+  await preview.run()
+}
+
 const apply = () => {
   const done = reached.value
   const byPick = new Map<string, string[]>()
@@ -218,7 +244,7 @@ const apply = () => {
   <section :class="$style.choice">
     <template v-if="!store.selection.length" />
     <p v-else-if="!preview.result" :class="$style.muted">Calculating preview…</p>
-    <template v-else-if="pieces.length">
+    <template v-else>
       <div :class="$style.headRow">
         <h3 ref="heading" :class="$style.heading" @mouseenter="showList(500)" @mouseleave="hideList">{{ store.selection.length }} selected</h3>
         <button type="button" :class="$style.deselect" @click="history.change(() => (store.selection = []))">Deselect all</button>
@@ -230,6 +256,7 @@ const apply = () => {
           <FocusEye @enter="enter(piece.index)" @leave="leave()" @keep="keep(piece.index, false)" />
         </li>
       </FloatingPanel>
+    <template v-if="pieces.length">
       <div :class="$style.row">
         <span :class="$style.word">Convert to</span>
         <DropDown v-model="material" :options="materials.map((m) => ({ value: m.value, label: counted(m.label, m.n) }))" aria-label="Material" />
@@ -262,12 +289,30 @@ const apply = () => {
         <button v-if="targeted.length" type="button" :class="[$style.button, $style.revert]" title="Take their targets away" @click="revert">
           {{ targeted.length < pieces.length ? `Revert ${targeted.length}` : 'Revert' }}
         </button>
+        <button v-if="dev" type="button" :class="$style.button" title="Dev mode: into notSupported in data/swaps.jsonc" @click="notSupported">
+          Add to not supported list
+        </button>
         <button type="button" :class="$style.button" :disabled="!reached.length || !changes" @click="apply">
           {{ partial ? `Apply to ${reached.length} and deselect` : 'Apply' }}
         </button>
       </div>
     </template>
-    <p v-else :class="$style.muted">Nothing here to convert</p>
+    <template v-else>
+      <p :class="$style.muted">No conversion option</p>
+      <ul :class="$style.reach" aria-label="Selected">
+        <li v-for="piece in listed" :key="piece.index" :class="$style.out" @click="keep(piece.index, false)">
+          <span :class="$style.name">{{ piece.name }}</span>
+          <FocusEye :class="$style.eyeEnd" @enter="enter(piece.index)" @leave="leave()" @keep="keep(piece.index, false)" />
+        </li>
+      </ul>
+      <div v-if="dev && unsupported.length" :class="$style.actions">
+        <button type="button" :class="$style.button" title="Dev mode: out of notSupported in data/swaps.jsonc; a pattern goes whole" @click="supported">
+          Remove from not supported list
+        </button>
+      </div>
+      <p v-if="refused" :class="$style.muted">{{ refused }}</p>
+    </template>
+    </template>
   </section>
 </template>
 
@@ -390,6 +435,7 @@ const apply = () => {
 
 .actions {
   display: flex;
+  gap: 6px;
   justify-content: flex-end;
   margin-top: 2px;
 }

@@ -21,9 +21,9 @@ public sealed class ConversionRules
     public Dictionary<string, string> ItemsOnCover { get; } = [];
 
     // global only, no pick or map setting changes them
-    public List<string> UntouchedItems { get; } = [];
+    public List<string> NotSupported { get; } = [];
 
-    public bool Untouched(string itemId) => UntouchedItems.Any(p => Matches(itemId, p));
+    public bool Unsupported(string name) => NotSupported.Any(p => Matches(name, p));
 
     public Dictionary<string, ConversionRules> Maps { get; } = [];
 
@@ -93,7 +93,7 @@ public sealed class ConversionRules
         return Matches(id, m.Groups[1].Value) && System.Numerics.Vector3.Distance(at, new(Number(2), Number(3), Number(4))) <= 1;
     }
 
-    private static bool Matches(string id, string pattern) => Regex.IsMatch(id, "^" + Regex.Escape(pattern).Replace("\\*", ".*") + "$");
+    internal static bool Matches(string id, string pattern) => Regex.IsMatch(id, "^" + Regex.Escape(pattern).Replace("\\*", ".*") + "$");
 
     internal static string NormalizeKeep(string entry) => Regex.Replace(entry.Trim(), @"\s*,\s*", ",");
 

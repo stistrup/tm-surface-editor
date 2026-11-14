@@ -18,7 +18,7 @@ internal static class ConversionRulesReader
             foreach (var (k, v) in part.UnavailableIn) result.UnavailableIn[k] = v;
             foreach (var (k, v) in part.Items) result.Items[k] = v;
             foreach (var (k, v) in part.ItemsOnCover) result.ItemsOnCover[k] = v;
-            result.UntouchedItems.AddRange(part.UntouchedItems);
+            result.NotSupported.AddRange(part.NotSupported);
             result.Settings.AddRange(part.Settings);
             result.Keep.UnionWith(part.Keep);
             result.KeepItems.UnionWith(part.KeepItems);
@@ -93,8 +93,8 @@ internal static class ConversionRulesReader
         if (root.TryGetProperty("ignorePrefixes", out var ignore))
             Read("ignorePrefixes", () => result.IgnorePrefixes.AddRange(Array(ignore).Select(Text)));
 
-        if (root.TryGetProperty("untouchedItems", out var untouched))
-            Read("untouchedItems", () => result.UntouchedItems.AddRange(Array(untouched).Select(Text)));
+        if (root.TryGetProperty("notSupported", out var unsupported))
+            Read("notSupported", () => result.NotSupported.AddRange(Array(unsupported).Select(Text)));
 
         if (root.TryGetProperty("unavailableIn", out var unavailable))
             Read("unavailableIn", () =>

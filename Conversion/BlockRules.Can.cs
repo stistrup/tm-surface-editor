@@ -15,8 +15,9 @@ internal static partial class BlockRules
         "gate" => !block.IsFree && Gates.GateEffect(block.Name) is not null,
         "remove" => block.Name.StartsWith("Gate"),
         "plain" => Gates.PlainOf(block.Name, run) is not null,
-        "snow" or "snowflip" => run.Shapes.IsTerrain(block.Name) || BlockNames.IsGameplayBlock(block.Name) && block.IsGround
-            || !block.IsPillar && !run.Shapes.IsPillarBlock(block.Name) && !block.IsFree && CustomBlockWriter.VariantId(block.IsGround, VariantOf(block), MobilOf(block)) is not null,
+        "snow" or "snowflip" => run.Shapes.IsTerrain(block.Name)
+            || (BlockRules.PrefabTrigger(block.Name, run.Shapes) ? block.IsGround && (CoverRules.TerrainUnder(block, run) || CoverFill.CanFill(run.Collection))
+            : !block.IsPillar && !run.Shapes.IsPillarBlock(block.Name) && !block.IsFree && CustomBlockWriter.VariantId(block.IsGround, VariantOf(block), MobilOf(block)) is not null),
         _ => true,
     };
 

@@ -71,9 +71,9 @@ internal static class CoverRules
     public static bool PickedCover(CGameCtnBlock block, ConversionRun run)
     {
         // a custom block loses the native trigger: the block goes to the air, its ground onto the terrain cell
-        if (block.IsGround && !block.IsFree && BlockNames.IsGameplayBlock(block.Name))
+        if (block.IsGround && !block.IsFree && BlockRules.PrefabTrigger(block.Name, run.Shapes))
         {
-            if (!CoveredGameplay(run).ContainsValue(block)) return false;
+            if (!CoveredGameplay(run).Values.Any(g => g.Block == block)) return false;
             // its terrain-bringing ground variant would still lay its dirt: the plain air variant
             block.Flags &= ~BlockFlags.Ground & ~BlockFlags.Replacement & ~(0x3F << 21);
             Bump(run.Report.CoveredTerrain, block.Name);
@@ -91,9 +91,10 @@ internal static class CoverRules
     {
         var coord = block.Coord;
         if (!run.Shapes.IsTerrain(block.Name) || IsWater(block.Name) || !CoveredGameplay(run).TryGetValue((coord.X, coord.Z), out var above)
-            || run.Items.GameplayGroundFor(above.Name, VariantOf(above), MobilOf(above), run.Map.Collection!.Value) is not { } ground) return false;
+            || run.Items.GameplayGroundFor(above.Block.Name, above.Variant, above.Mobil, run.Map.Collection!.Value) is not { } ground) return false;
         Cover(run, block, ground);
-        (block.Coord, block.Direction) = (above.Coord, above.Direction);
+        run.GroundOf[block] = above.Block;
+        (block.Coord, block.Direction) = (above.Block.Coord, above.Block.Direction);
         block.Flags &= ~0xFFF & ~(0x3F << 21);
         return true;
     }
@@ -104,11 +105,14 @@ internal static class CoverRules
         run.CoverBodies.Add(block);
     }
 
-    // ground gameplay blocks picked to snow, by cell, with terrain under them; read before any of them goes to the air
-    private static Dictionary<(int X, int Z), CGameCtnBlock> CoveredGameplay(ConversionRun run)
-        => run.CoveredGameplay ??= run.Grid.Where(b => b.IsGround && !b.IsFree && BlockNames.IsGameplayBlock(b.Name) && run.Rules.PieceChoice(b) == "snow"
-                && run.Grid.Any(t => t.Coord.X == b.Coord.X && t.Coord.Z == b.Coord.Z && run.Shapes.IsTerrain(t.Name) && !IsWater(t.Name)))
-            .GroupBy(b => (b.Coord.X, b.Coord.Z)).ToDictionary(g => g.Key, g => g.First());
+    // a terrain block (not water) in its column carries the snow ground; base ground alone has none
+    public static bool TerrainUnder(CGameCtnBlock block, ConversionRun run)
+        => run.Grid.Any(t => t.Coord.X == block.Coord.X && t.Coord.Z == block.Coord.Z && run.Shapes.IsTerrain(t.Name) && !IsWater(t.Name));
+
+    // ground gameplay blocks picked to snow, by cell, with terrain under them, and their ground variant; read before any of them goes to the air
+    private static Dictionary<(int X, int Z), (CGameCtnBlock Block, int Variant, int Mobil)> CoveredGameplay(ConversionRun run)
+        => run.CoveredGameplay ??= run.Grid.Where(b => b.IsGround && !b.IsFree && BlockRules.PrefabTrigger(b.Name, run.Shapes) && run.Rules.PieceChoice(b) == "snow" && TerrainUnder(b, run))
+            .GroupBy(b => (b.Coord.X, b.Coord.Z)).ToDictionary(g => g.Key, g => (g.First(), VariantOf(g.First()), MobilOf(g.First())));
 
     public static bool DecoInTerrain(CGameCtnBlock block, ConversionRun run)
     {

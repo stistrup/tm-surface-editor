@@ -43,7 +43,7 @@ internal static class Neighbours
         if (block.Name.StartsWith("Stand")) return true;
         if (run.SceneryKept.Contains(block) || run.Renamed.Contains(block) || run.Customs.ContainsKey(block) || run.Skinned.Contains(block)) return true;
         // an item copy has no trigger
-        if (block.IsGround || run.Shapes.IsPillarBlock(block.Name) || BlockNames.IsGameplayBlock(block.Name)) return true;
+        if (block.IsGround || run.Shapes.IsPillarBlock(block.Name) || BlockRules.PrefabTrigger(block.Name, run.Shapes)) return true;
         if (run.OnKeepList(block) || BlockKinds.IsConcrete(run, block, variant, target)) return true;
         return WallOnly() && !(SurfaceTops.TopAppears(now, target) && AdapterAbove(run, block));
     }

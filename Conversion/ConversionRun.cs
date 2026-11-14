@@ -46,7 +46,10 @@ internal sealed class ConversionRun
     public Dictionary<CGameCtnAnchoredObject, string> WaitingItems { get; } = new(ReferenceEqualityComparer.Instance);
     public Dictionary<CGameCtnBlock, (string Archetype, IReadOnlySet<int> Baked, bool Lift)> BuiltAs { get; } = new(ReferenceEqualityComparer.Instance);
     public HashSet<CGameCtnBlock> Stacked { get; } = new(ReferenceEqualityComparer.Instance);
-    public Dictionary<(int X, int Z), CGameCtnBlock>? CoveredGameplay { get; set; }
+    public Dictionary<(int X, int Z), (CGameCtnBlock Block, int Variant, int Mobil)>? CoveredGameplay { get; set; }
+
+    // a covered gameplay block's ground (the terrain cell under it) -> the block
+    public Dictionary<CGameCtnBlock, CGameCtnBlock> GroundOf { get; } = new(ReferenceEqualityComparer.Instance);
     // snow terrain cells, with the shape their flags held
     public List<(CGameCtnBlock Block, int Variant, int Mobil)> Covered { get; } = [];
     // custom bodies in snow; their trees freeze

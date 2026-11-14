@@ -7,8 +7,8 @@
     "TechnicsScreen"
   ],
 
-  // items never converted, whatever the options or picks (global, not per map)
-  "untouchedItems": ["Podium"],
+  // blocks and items never converted, whatever the options or picks; * = any text
+  "notSupported": ["Podium", "Stand*", "TechnicsScreen2x3Straight", "TechnicsScreen155StraightX2", "Flag16m", "TechnicsScreen6x1StraightX3", "TechnicsScreen4x1Straight", "ShowSpeakers"],
 
   // ice blocks an environment lacks
   "unavailableIn": {

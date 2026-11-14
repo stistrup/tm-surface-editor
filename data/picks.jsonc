@@ -56,6 +56,8 @@
     "terrain": { "label": "Terrain", "picks": ["", "snow"] },
     "shore": { "label": "Shore, water", "picks": ["", "snow"] },
     "special": { "label": "Special", "picks": ["", "plain", "twin", "custom", "gate"] },
+    // gate waypoints on the ground: native gate in the air, its ground as snow
+    "gateground": { "label": "Gate on the ground", "picks": ["", "snow"] },
     "specialground": { "label": "Special, on the ground", "picks": ["", "custom", "plain", "snow"] },
     "reactor": { "label": "Reactor", "picks": ["", "plain", "flip"] },
     "reactorground": { "label": "Reactor, on the ground", "picks": ["", "plain", "snow", "flip", "snowflip"] },

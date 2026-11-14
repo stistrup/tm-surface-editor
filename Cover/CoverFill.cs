@@ -30,6 +30,19 @@ internal static class CoverFill
         return filled;
     }
 
+    // a gate picked to snow on base ground: the flat land block under it, which then carries its snow ground (CoverRules.UnderCoveredGameplay)
+    public static void UnderPickedGates(CGameCtnChallenge map, string collection, BlockCatalog shapes, ConversionRules rules)
+    {
+        if (!CanFill(collection) || FlatBlock(collection) is not { } flat) return;
+        var grid = map.GetBlocks().Where(b => !b.IsFree).ToList();
+        var y = GroundY(collection);
+        foreach (var gate in grid.Where(b => b.IsGround && BlockRules.PrefabTrigger(b.Name, shapes) && rules.PieceChoice(b) == "snow").ToList())
+            if (!grid.Any(t => t.Coord.X == gate.Coord.X && t.Coord.Z == gate.Coord.Z && shapes.IsTerrain(t.Name)))
+                grid.Add(map.PlaceBlock(flat, new Int3(gate.Coord.X, y, gate.Coord.Z), Direction.North, true, 0, 0)!);
+    }
+
+    public static bool CanFill(string collection) => !DefaultZones.IsWater(DefaultZones.Of(collection)) && FlatBlock(collection) is not null;
+
     // snowOnWaterHills / snowOnCliffs, ground level only: those terrain columns snow as if picked
     public static void ByKind(CGameCtnChallenge map, string collection, BlockCatalog shapes, ConversionRules rules)
     {

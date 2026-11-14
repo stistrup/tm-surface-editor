@@ -13,6 +13,7 @@ internal static partial class BlockRules
 {
     private static readonly BlockRule[] Rules =
     [
+        NotSupported,
         CoverRules.UnderCoveredGameplay,
         // only sets a pillar in a snowed column into the air, picked or not
         CoverRules.PillarOnCover,
@@ -60,6 +61,17 @@ internal static partial class BlockRules
                 return;
             }
     }
+
+    private static bool NotSupported(CGameCtnBlock block, ConversionRun run)
+    {
+        if (!run.DataRules.Unsupported(block.Name)) return false;
+        Bump(run.Report.Untouched, block.Name);
+        return true;
+    }
+
+    // its trigger is a prefab entity a custom block doesn't carry: effect blocks, gate waypoints
+    public static bool PrefabTrigger(string name, BlockCatalog shapes)
+        => BlockNames.IsGameplayBlock(name) || name.StartsWith("Gate") && shapes.Waypoint(name) is not null;
 
     // each pick goes the way its rule would; snow goes through the snow columns
     private static bool Picked(CGameCtnBlock block, ConversionRun run)

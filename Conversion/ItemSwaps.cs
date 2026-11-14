@@ -14,7 +14,7 @@ internal static class ItemSwaps
         foreach (var item in run.Map.GetAnchoredObjects())
         {
             var model = item.ItemModel;
-            if (run.DataRules.Untouched(model.Id)) { Bump(run.Report.Untouched, model.Id); continue; }
+            if (run.DataRules.Unsupported(model.Id)) { Bump(run.Report.Untouched, model.Id); continue; }
             var p = item.AbsolutePositionInMap;
             var at = new Vector3(p.X, p.Y, p.Z);
             var picked = run.Rules.ChoiceAt(model.Id, at) ?? (run.Rules.RulesOn ? null : "keep");

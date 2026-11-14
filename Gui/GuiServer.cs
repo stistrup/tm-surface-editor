@@ -85,6 +85,8 @@ internal sealed partial class GuiServer(string url, string webRoot, ConversionPr
         ["/api/convert-dismiss"] = c => Ok(c, () => jobs.Dismiss(c.Query("id") ?? "")),
         ["/api/author"] = SetAuthor,
         ["/api/command"] = Command,
+        ["/api/not-supported"] = AddNotSupported,
+        ["/api/supported"] = RemoveNotSupported,
     };
 
     // listening: the browser can open now
