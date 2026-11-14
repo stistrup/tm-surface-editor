@@ -16,6 +16,8 @@ Only pre-releases so far. Download the newest package for your system from [Rele
 
 I'm running on Linux and haven't tried on Windows, I'll just assume Windows could be suspicious of this program as it isn't signed, or seems normal. If it does, click More info › Run anyway, and let me know. Or if you have any other problems on Windows for that matter.
 
+Windows builds: free code signing provided by SignPath.io, certificate by SignPath Foundation (from the first signed release on).
+
 To update, just replace everything in old app folder (wherever you put it). Your settings, cache and extracted game files live elsewhere (`%LOCALAPPDATA%\TmSurfaceEditor` on Windows, `~/.local/share/TmSurfaceEditor` on Linux, and Openplanet's own folder)
 
 ## From source

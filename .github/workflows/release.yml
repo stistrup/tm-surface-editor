@@ -1,0 +1,114 @@
+name: Release
+
+run-name: "${{ inputs.bump }} ${{ inputs.kind }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: Release type
+        type: choice
+        options: [pre-release, release]
+        default: pre-release
+      bump:
+        description: Version bump
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+concurrency: release
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: next
+        run: |
+          current=$(grep -o '<Version>[^<]*' TmSurfaceEditor.csproj | cut -d'>' -f2)
+          IFS=. read -r major minor patch <<< "${current%%-*}"
+          case "${{ inputs.bump }}" in
+            major) version="$((major + 1)).0.0" ;;
+            minor) version="$major.$((minor + 1)).0" ;;
+            patch) version="$major.$minor.$((patch + 1))" ;;
+          esac
+          if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            echo "::error::tag v$version already exists"; exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Version::v$version (${{ inputs.kind }}, from $current)"
+
+  release:
+    name: v${{ needs.version.outputs.version }} ${{ inputs.kind }}
+    needs: version
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build
+        run: |
+          sed -i "s|<Version>[^<]*</Version>|<Version>$VERSION</Version>|" TmSurfaceEditor.csproj
+          tools/release
+
+      # SignPath signs TmSurfaceEditor.exe inside the uploaded folder; skipped until the secret exists
+      - name: Upload unsigned Windows build
+        id: unsigned
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-win-x64
+          path: dist/TmSurfaceEditor-${{ env.VERSION }}-win-x64
+      - name: Sign
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+      - name: Zip signed build
+        if: env.SIGNPATH_API_TOKEN != ''
+        run: |
+          name="TmSurfaceEditor-$VERSION-win-x64"
+          rm -rf "dist/$name" "dist/$name.zip"
+          mv signed "dist/$name"
+          python3 -I -c 'import shutil, sys; shutil.make_archive(sys.argv[1], "zip", "dist", sys.argv[2])' "dist/$name" "$name"
+
+      - name: Commit and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "version $VERSION"
+          git tag "v$VERSION"
+          git push origin HEAD:main "v$VERSION"
+
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flag=$([ "${{ inputs.kind }}" = pre-release ] && echo --prerelease || echo --latest)
+          gh release create "v$VERSION" $flag --generate-notes --title "v$VERSION" \
+            "dist/TmSurfaceEditor-$VERSION-win-x64.zip" "dist/TmSurfaceEditor-$VERSION-linux-x64.tar.gz"
+          echo "### v$VERSION (${{ inputs.kind }})" >> "$GITHUB_STEP_SUMMARY"
