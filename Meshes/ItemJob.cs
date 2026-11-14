@@ -26,8 +26,9 @@ internal sealed record ItemJob(Theme Theme, ItemRequest Request, ItemRecipe Reci
 
     public bool IsTerrainFace(MeshPiece p) => TerrainFaces.IsTerrain(p.Material, Environment);
 
-    // left as the game's own material, linked after import
+    // left as the game's own material, linked after import; also any unmapped one the importer's library lacks
     public bool LinksNative(string material)
-        => (Materials.Native.Contains(material) || Recipe.Body && !Materials.Map.ContainsKey(material) && !Theme.KeepsOwnSurface(material))
+        => (Materials.Native.Contains(material)
+                || !Materials.Map.ContainsKey(material) && (Recipe.Body && !Theme.KeepsOwnSurface(material) || MaterialLib.Surface(material) is null))
             && MaterialLib.NativeLink(material, Environment) is not null;
 }

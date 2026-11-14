@@ -68,8 +68,10 @@
   "ItemInflatableFloor": "PlatformIce_PlatformTech",
   "ItemRamp": "PlatformIce_PlatformTech",
   "Unknown": "CustomConcrete",
-  // no good glass in the library
-  "CanopyGlass": "GlassWaterWall",
+  // canopy: the glass stays the game's own, the white shell turns ice, the collision drives as ice
+  "CanopyGlass": "native",
+  "Canopy": "PlatformIce_PlatformTech",
+  "CollisionCanopy": "PlatformIce_PlatformTech",
   "ItemObstacleLightOn": "LightSpot",
   "SpeedometerLight": "SpeedometerLight_Dyna",
   "ThemeRallyCastleBorders": "CustomConcrete",

@@ -302,7 +302,7 @@ public sealed class MeshExporter(GameFiles files, IReadOnlyDictionary<string, st
     // platform UVs for roads, plain-snow UVs for snow
     private bool CoverLaidOut(string source) => source != "DecoHill" && MapMaterial(source) == Cover;
 
-    private static readonly HashSet<string> PlatformLaidOut = ["RoadTech", "RoadBump", "RoadDirt", "ThemeSnowRoad"];
+    private static readonly HashSet<string> PlatformLaidOut = ["RoadTech", "RoadBump", "RoadDirt", "ThemeSnowRoad", "Canopy"];
 
     // only roads that turn into ice; drawn as they are, they keep the game's UVs
     private bool RoadLaidOut(string source) => PlatformLaidOut.Contains(source) && MapMaterial(source) != source;

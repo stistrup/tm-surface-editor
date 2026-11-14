@@ -98,6 +98,10 @@ public sealed partial class BlockCatalog
                 Enumerable.Range(0, 8).Cast<int?>().FirstOrDefault(column => shownClips.Contains(ClipKey.Of(bit, index, column!.Value))))
             : null;
 
+    // a block placed as this variant on another archetype: the archetype's own when it has it, else its first (the clipless stand-in has one)
+    public int VariantOn(string archetype, bool ground, int variant)
+        => TryLoadBlock(archetype, out var block) && variant <= ((ground ? block.Info.AdditionalVariantsGround?.Length : block.Info.AdditionalVariantsAir?.Length) ?? 0) ? variant : 0;
+
     public bool IsPillarBlock(string blockName) => TryLoadBlock(blockName, out var block) && block.Info.IsPillar;
 
     // NoPillarBelowIndex, air only

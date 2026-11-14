@@ -15,7 +15,7 @@ public sealed partial class ItemBuilder
     // ramp: local footprint sides (bits -X, +X, -Z, +Z) whose surface rises by the skin lift to meet a skinned neighbour
     public BuiltBlock? BlockFor(string block, string archetype, bool ground, int variant, int mobil, Id collection, IReadOnlySet<int> baked, ItemKind? kind = null, Vector2 tilt = default, bool lift = false, int ramp = 0)
     {
-        if (CustomBlockWriter.VariantId(ground, variant, mobil) is not { } variantId) return null;
+        if (CustomBlockWriter.VariantId(ground, archetype == block ? variant : shapes.VariantOn(archetype, ground, variant), mobil) is not { } variantId) return null;
         var itemKind = kind ?? (!ground ? ItemKind.None : lift ? ItemKind.StackedBody : ItemKind.GroundBody);
         if (For(block, ground, variant, mobil, baked, itemKind, tilt) is not { } item || item == BuiltItem.Nothing) return null;
         // none of the theme in it: clips draw the surface (penalty slopes), the game would keep them native

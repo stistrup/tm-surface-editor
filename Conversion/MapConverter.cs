@@ -69,7 +69,12 @@ public sealed class MapConverter(HashSet<string> knownBlocks, ConversionRules da
         foreach (var (block, iceBlock) in run.Customs)
         {
             if (run.Stacked.Contains(block)) block.Flags |= BlockFlags.Ghost;
-            if (run.BuiltAs.TryGetValue(block, out var built)) KeepPivot(run, block, built.Archetype);
+            if (run.BuiltAs.TryGetValue(block, out var built) && built.Archetype != block.Name)
+            {
+                KeepPivot(run, block, built.Archetype);
+                var variant = BlockFlags.VariantOf(block);
+                block.Flags = block.Flags & ~(0x3F << 21) | run.Shapes.VariantOn(built.Archetype, block.IsGround, variant) << 21;
+            }
             block.Name = iceBlock.Ident.Id + "_CustomBlock";
             block.Flags |= CustomBlockWriter.CustomFlag;
             block.Author = iceBlock.Ident.Author;

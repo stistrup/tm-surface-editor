@@ -108,7 +108,8 @@ public sealed class ClipResolver(BlockCatalog shapes)
         private List<ClipInfo> Picked(Int3 cell, Int3 dir, List<SideAt> list, SideAt at, List<SideAt> facingAt)
         {
             var facing = facingAt.SelectMany(s => s.Side.Clips).ToList();
-            var connected = at.Side.Clips.Any(a => !a.Anti && facingAt.Any(f => f.Side.Clips.Any(b => Compatible(a, b)
+            // a horizontal-group clip (canopy, water edge) connects only its own layer: the side's other clips still show (canopy border beams)
+            var connected = at.Side.Clips.Any(a => !a.Anti && a.HorizontalGroup is null && facingAt.Any(f => f.Side.Clips.Any(b => Compatible(a, b)
                 && (dir.Y == 0 || Grouped(a, b) || Shaped(dir, list, at, a, f, b)))));
             bool Shows(ClipInfo c)
             {

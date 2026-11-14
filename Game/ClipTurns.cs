@@ -14,7 +14,15 @@ public static class ClipTurns
     private static readonly Lazy<Dictionary<string, int>> table = new(() => File.Exists(FilePath)
         ? Jsonc.Load<Dictionary<string, int>>(FilePath) : []);
 
-    public static int? Learned(string blockName, int bit, string clipName) => table.Value.TryGetValue(Key(blockName, bit, clipName), out var turn) ? turn : null;
+    // this block's own, else the turn every other block with this clip in this slot agrees on (two at least):
+    // checked against the table itself 313 right / 7 wrong, the fitted turn 438 / 160
+    public static int? Learned(string blockName, int bit, string clipName)
+        => table.Value.TryGetValue(Key(blockName, bit, clipName), out var turn) ? turn
+            : shared.Value.TryGetValue((bit, clipName), out var turns) && turns.Count >= 2 && turns.Distinct().Count() == 1 ? turns[0] : null;
+
+    private static readonly Lazy<Dictionary<(int Bit, string Clip), List<int>>> shared = new(() => table.Value
+        .Select(kv => (Parts: kv.Key.Split('|'), Turn: kv.Value)).Where(e => e.Parts.Length == 3)
+        .GroupBy(e => (int.Parse(e.Parts[1]), e.Parts[2])).ToDictionary(g => g.Key, g => g.Select(e => e.Turn).ToList()));
 
     public static string Key(string blockName, int bit, string clipName) => $"{blockName}|{bit}|{clipName}";
 

@@ -286,11 +286,11 @@ const apply = () => {
         </li>
       </ul>
       <div :class="$style.actions">
+        <button v-if="dev" type="button" :class="[$style.button, $style.left]" title="Dev mode: into notSupported in data/swaps.jsonc" @click="notSupported">
+          Mark not supported
+        </button>
         <button v-if="targeted.length" type="button" :class="[$style.button, $style.revert]" title="Take their targets away" @click="revert">
           {{ targeted.length < pieces.length ? `Revert ${targeted.length}` : 'Revert' }}
-        </button>
-        <button v-if="dev" type="button" :class="$style.button" title="Dev mode: into notSupported in data/swaps.jsonc" @click="notSupported">
-          Add to not supported list
         </button>
         <button type="button" :class="$style.button" :disabled="!reached.length || !changes" @click="apply">
           {{ partial ? `Apply to ${reached.length} and deselect` : 'Apply' }}
@@ -444,7 +444,8 @@ const apply = () => {
   composes: button from '../ui.module.css';
 }
 
-.revert {
+.left,
+.revert:first-child {
   margin-right: auto;
 }
 
