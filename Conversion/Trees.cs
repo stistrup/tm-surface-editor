@@ -37,6 +37,7 @@ internal static partial class Trees
             if (Vegetation.Value.For(run.Collection, model, w.Translation, RoomAbove(solid, local.Translation)) is not { } stand) { Bump(run.Report.TreesMissing, model); continue; }
             var frozen = snowed ? new[] { model, Vegetation.Value.ModelOf(run.Collection, stand), stand.Item }
                 .Select(id => id is null ? null : ItemSwaps.CoverSwap(run, id)).FirstOrDefault(t => t is not null) : null;
+            if (frozen == ItemSwaps.Removed) continue;
             // yaw, pitch, roll as CreateFromYawPitchRoll builds them
             var (pitch, yaw, roll) = (MathF.Asin(Math.Clamp(-w.M32, -1, 1)), MathF.Atan2(w.M31, w.M33), MathF.Atan2(w.M12, w.M22));
             var ident = frozen is null ? new Ident(stand.Item, run.Map.Collection!.Value, "Nadeo") : new Ident(frozen, new Id(26), "Nadeo"); // Stadium2020

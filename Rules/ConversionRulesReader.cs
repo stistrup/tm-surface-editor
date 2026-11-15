@@ -126,9 +126,11 @@ internal static class ConversionRulesReader
         return value.GetString()!;
     }
 
+    // null: removed (ItemSwaps.Removed)
     private static string ItemTarget(JsonProperty entry)
-        => entry.Value.ValueKind == JsonValueKind.String && entry.Value.GetString() is { Length: > 0 } to
-            ? to : throw new FormatException($"item '{entry.Name}' needs a target item id");
+        => entry.Value.ValueKind == JsonValueKind.Null ? ItemSwaps.Removed
+            : entry.Value.ValueKind == JsonValueKind.String && entry.Value.GetString() is { Length: > 0 } to
+            ? to : throw new FormatException($"item '{entry.Name}' needs a target item id or null");
 
     private static Translation ParseEntry(string name, JsonElement value) => value.ValueKind switch
     {

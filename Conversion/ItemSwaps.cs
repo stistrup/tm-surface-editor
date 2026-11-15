@@ -22,7 +22,7 @@ internal static class ItemSwaps
             if (picked == "remove" || picked is null && run.Rules.RemovesItem(model.Id, at)) { removed.Add(item); Bump(run.Report.RemovedByList, model.Id); }
             else if (model.Author != "Nadeo") continue;
             else if (picked == "keep" || picked is null && run.Rules.KeepsItem(model.Id)) Bump(run.Report.KeptByList, model.Id);
-            else if (SwapTree(run, item, model, picked, snow)) { }
+            else if (SwapTree(run, item, model, picked, snow)) { if (item.ItemModel.Id == Removed) removed.Add(item); }
             else if (run.Items.ForItem(model.Id) is { } copy) PlaceCopy(run, item, model, copy, icedAt);
             else if (run.Items.Failures.ContainsKey(model.Id)) Bump(run.Report.ItemsNotConverted, model.Id);
             else if (snow.Under(at) && FlushWithSurface(run, item, snow))
@@ -46,11 +46,15 @@ internal static class ItemSwaps
         var p = item.AbsolutePositionInMap;
         if (!((always || trees && Find(run.DataRules.ItemsOnCover, out to)) && VariantSwap(run, item, to) is var (target, variant)
             && (always || frozen || snow.Touches(new Vector3(p.X, p.Y, p.Z), TreeHeight(target))))) return false;
+        Bump(run.Report.SwappedItems, (model.Id, target == Removed ? "(removed)" : target));
+        if (target == Removed) { item.ItemModel = model with { Id = Removed }; return true; }
         item.ItemModel = model with { Id = target, Collection = new Id(26) }; // Stadium2020
         item.Flags = (short)(item.Flags & ~VariantBits | variant << 8);
-        Bump(run.Report.SwappedItems, (model.Id, target));
         return true;
     }
+
+    // swap table target null: too small to stand in for (grass, flowers)
+    public const string Removed = "";
 
     // as Run goes: other authors' items only go; a tree with a frozen one swaps, the rest copy; a sink pick copies too
     public static bool Can(string pick, Ident model, ConversionRun run) => pick switch
