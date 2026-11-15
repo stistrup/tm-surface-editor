@@ -4,7 +4,7 @@ A tool to convert Trackmania 2020 maps to ice. It features a web based editor to
 
 <img width="2270" height="1246" alt="image" src="https://github.com/user-attachments/assets/4f61e408-328f-44af-b724-a980902d4d92" />
 
-This is still under development with a bunch of bugs, missing features, assumptions that might not be true of the game engine etc. Hobby project and not sure where this will end up yet. Lots of ideas, but one thing at a time. AI is used quite heavily and tooling exists to assist with development. I try to keep reasonable code standards, choose flows, rules, UI interactions with care but some vibe coded messes here and there is to be expected.
+This is still under development with a bunch of bugs, missing features, assumptions that might not be true of the game engine etc. Hobby project and not sure where this will end up yet. Lots of ideas, but one thing at a time. AI is used quite heavily and tooling exists to assist with development. I try to keep reasonable code standards, choose flows, rules, UI interactions with care but as this is a hobby project, I'm not going to vet and comb everything.
 
 **NOTE**: the viewer/editor tries to mimic what happens in game too, and is still quite often wrong. So even if something looks off, try a conversion and see what happens in game. The opposite can be true too, looks good in editor and game maybe the shadows looks way off. Let me know if you find these things.
 
