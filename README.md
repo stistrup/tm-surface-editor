@@ -1,6 +1,6 @@
 # TmSurfaceEditor
 
-A tool to convert Trackmania 2020 maps to ice. It features a web based editor to swap surfaces on blocks. It previews your edits, can edit in bulk, per preset or block by block. 
+A tool to convert Trackmania 2020 maps blocks to other surfaces. Either via web based editor or CLI to swap surfaces on blocks/items. It previews your edits, can edit in bulk, per preset or block by block. 
 
 <img width="2270" height="1246" alt="image" src="https://github.com/user-attachments/assets/4f61e408-328f-44af-b724-a980902d4d92" />
 
