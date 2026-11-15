@@ -7,14 +7,15 @@ internal static class Importer
 {
     private sealed record FbxObject(string Name, string Material, int Triangles);
 
-    public static string? Import(Theme theme, string name, List<MeshPiece> pieces, string? waypoint, string? environment, string meshDir, string json, string buildScript, out Dictionary<GBX.NET.Engines.Plug.CPlugSurface.MaterialId, int> surfaces)
+    // sideMaterials: the sides chosen for it, allowed though they drive as a surface the theme replaces (so is the pad marker: its physics is set after)
+    public static string? Import(Theme theme, IReadOnlySet<string> sideMaterials, string name, List<MeshPiece> pieces, string? waypoint, string? environment, string meshDir, string json, string buildScript, out Dictionary<GBX.NET.Engines.Plug.CPlugSurface.MaterialId, int> surfaces)
     {
         surfaces = [];
         var materials = pieces.Select(p => p.Material).Distinct().Order().ToList();
         // the importer ignores PhysicsId unless set explicitly
         var physics = MaterialLib.Surfaces(materials.Where(m => !m.StartsWith(MaterialLib.NativePrefix)));
         foreach (var m in materials.Where(m => m.StartsWith(MaterialLib.NativePrefix))) physics[m] = MaterialLib.NativeSurface(m, environment);
-        if (materials.FirstOrDefault(m => !m.StartsWith(MaterialLib.NativePrefix) && theme.Replaces.Contains(physics[m])) is { } dry)
+        if (materials.FirstOrDefault(m => !m.StartsWith(MaterialLib.NativePrefix) && !sideMaterials.Contains(m) && m != Pads.PadMaterial && theme.Replaces.Contains(physics[m])) is { } dry)
             return $"material {dry} drives as {physics[dry]}; map it in {theme.MaterialsFile}";
         var standIn = MaterialLib.NativeStandIns(materials, physics);
         var lightmapOnly = string.Join(",", materials.Where(MaterialLib.LightmapOnly));

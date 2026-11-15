@@ -75,5 +75,5 @@ internal static class Pads
     public static string? PadGameplay(string piece) => Regex.Match(piece, @"_g([A-Za-z0-9]+)$") is { Success: true } m ? m.Groups[1].Value : null;
 
     // own surface so the fix-up can tell it apart
-    private const string PadMaterial = "CustomIce";
+    public const string PadMaterial = "CustomIce";
 }

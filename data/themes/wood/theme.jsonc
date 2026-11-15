@@ -1,0 +1,18 @@
+// the snow road's wood: road and deco link the game's own ThemeSnowRoad material
+{
+  // in item names: gWood_<block>_Wood…
+  "tag": "Wood",
+  "surfaces": ["Wood"],
+  "replaces": ["Asphalt", "Dirt", "Grass", "Green", "Plastic", "Sand", "RoadIce", "Ice"],
+  // "Native_<material>": the game's own material, linked after import
+  "road": "Native_ThemeSnowRoad",
+  "cover": "Native_ThemeSnowRoad",
+  "family": "ThemeSnowRoad",
+  // sides by default (data/sides.jsonc)
+  "sides": "original",
+  "padSurface": "Wood",
+  // ThemeSnowRoad_D's grain runs along v
+  "roadAlong": "v",
+  // the game's own wood road blocks
+  "blockWord": "SnowRoad"
+}

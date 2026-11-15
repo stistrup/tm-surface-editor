@@ -10,6 +10,7 @@ import { useHoverFocus } from '../hoverFocus'
 import FocusEye from './FocusEye.vue'
 import { displayName } from '../viewer/names'
 import { addNotSupported, removeNotSupported } from '../api'
+import { baseOf, sidesOf, withSides } from '../sides'
 
 const store = useMapStore()
 const preview = usePreviewStore()
@@ -42,7 +43,7 @@ const pieces = computed(() => {
     }
     // only "original" left: nothing to convert it to
     if (![...can.keys()].some((at) => !at.startsWith('original|'))) return []
-    return [{ index, key: d.key, now: preview.picks[d.key] ?? '', can }]
+    return [{ index, key: d.key, now: preview.picks[d.key] ?? '', can, sides: !!d.sides }]
   })
 })
 
@@ -50,6 +51,8 @@ const words = computed(() => preview.result?.words ?? null)
 const material = ref('')
 const way = ref('')
 const ticked = ref(new Set<string>())
+// null: the material's own
+const side = ref<string | null>(null)
 
 const count = (test: (combo: string) => boolean) => pieces.value.filter((p) => [...p.can.keys()].some(test)).length
 
@@ -88,13 +91,27 @@ const tick = (option: string, on: boolean) => {
   ticked.value = next
 }
 
-// the pieces the choice reaches, with the pick each takes
-const reached = computed(() => {
+// the pieces the choice reaches, with the pick each takes (before sides)
+const reachedBase = computed(() => {
   return pieces.value.flatMap((p) => {
     const option = options.value.find((o) => ticked.value.has(o.value) && p.can.has(withOption(wanted.value, o.value)))
     const pick = option ? p.can.get(withOption(wanted.value, option.value)) : p.can.get(wanted.value)
     return pick === undefined ? [] : [{ ...p, pick }]
   })
+})
+
+// sides: for ways that build, on pieces that have them
+const ownSides = computed(() => words.value?.defaultSides[material.value] ?? null)
+const sideChoices = computed(() => {
+  if (!ownSides.value || !words.value?.ways[way.value]?.sides) return []
+  const n = reachedBase.value.filter((p) => p.sides).length
+  if (!n) return []
+  return Object.entries(words.value.sides).map(([value, w]) => ({ value, label: counted(w.label, n) }))
+})
+const sideNow = computed(() => side.value ?? ownSides.value ?? '')
+const reached = computed(() => {
+  const chosen = sideChoices.value.length && sideNow.value !== ownSides.value ? sideNow.value : null
+  return reachedBase.value.map((p) => (p.sides && chosen ? { ...p, pick: withSides(p.pick, chosen) } : p))
 })
 // some, not none and not all: the rest stay selected for another choice
 const partial = computed(() => reached.value.length > 0 && reached.value.length < pieces.value.length)
@@ -104,6 +121,7 @@ const changes = computed(() => reached.value.some((p) => p.now !== p.pick))
 interface Kept {
   material: string
   way: string
+  side?: string | null
   ticked: string[]
   selection: number[]
 }
@@ -115,6 +133,7 @@ let before: number[] = []
     before = kept.selection
     material.value = kept.material
     way.value = kept.way
+    side.value = kept.side ?? null
     ticked.value = new Set(kept.ticked)
   }
 }
@@ -123,9 +142,10 @@ let before: number[] = []
 const startOver = () => {
   const now = new Set(pieces.value.map((p) => p.now))
   const pick = now.size === 1 ? [...now][0] : null
-  const choice = pick === null ? null : Object.values(preview.result?.choices ?? {}).flat().find((c) => c.value === pick)
+  const choice = pick === null ? null : Object.values(preview.result?.choices ?? {}).flat().find((c) => c.value === baseOf(pick))
   material.value = materials.value.find((m) => m.value === choice?.material)?.value ?? materials.value[0]?.value ?? ''
   way.value = choice?.way ?? ''
+  side.value = pick === null ? null : sidesOf(pick)
   ticked.value = new Set(choice?.option ? [choice.option] : [])
 }
 
@@ -146,11 +166,16 @@ watch(
 )
 
 watch(
-  () => [material.value, way.value, ticked.value, store.selection],
+  () => [material.value, way.value, side.value, ticked.value, store.selection],
   () => {
-    writeSession(KEY, { material: material.value, way: way.value, ticked: [...ticked.value], selection: before } satisfies Kept)
+    writeSession(KEY, { material: material.value, way: way.value, side: side.value, ticked: [...ticked.value], selection: before } satisfies Kept)
   },
 )
+
+// another material: its own sides
+watch(material, (now, was) => {
+  if (was && now !== was) side.value = null
+})
 
 // a way the material doesn't have: its first
 watch(ways, (now) => {
@@ -190,7 +215,12 @@ const reach = computed(() => {
   const now = new Map(pieces.value.map((p) => [p.index, p.now]))
   const rows = listed.value.map((piece) => {
     const pick = now.get(piece.index) ?? ''
-    const label = (value: string) => (value ? (pickLabels.value.get(value) ?? value) : 'No target')
+    const label = (value: string) => {
+      if (!value) return 'No target'
+      const base = pickLabels.value.get(baseOf(value)) ?? value
+      const sides = sidesOf(value)
+      return sides ? `${base}, ${words.value?.sides[sides]?.label.toLowerCase() ?? sides} sides` : base
+    }
     const next = hit.get(piece.index)
     return { ...piece, applies: next !== undefined, next: next === undefined ? null : label(next), same: next === pick }
   })
@@ -264,6 +294,10 @@ const apply = () => {
       <div v-if="ways.length" :class="$style.row">
         <span :class="$style.word">by</span>
         <DropDown v-model="way" :options="ways.map((w) => ({ value: w.value, label: counted(w.label, w.n), title: w.title }))" aria-label="Way" />
+      </div>
+      <div v-if="sideChoices.length" :class="$style.row">
+        <span :class="$style.word">sides</span>
+        <DropDown :model-value="sideNow" :options="sideChoices" aria-label="Sides" @update:model-value="side = $event" />
       </div>
       <label v-for="o in options" :key="o.value" :class="$style.option" :title="o.title">
         <input type="checkbox" :checked="ticked.has(o.value)" @change="tick(o.value, ($event.target as HTMLInputElement).checked)" />

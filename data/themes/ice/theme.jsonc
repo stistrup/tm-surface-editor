@@ -11,6 +11,8 @@
   "cover": "PlatformIce_DecoHill",
   // the library's material family for this theme (PlatformIce_*)
   "family": "PlatformIce",
+  // sides by default (data/sides.jsonc)
+  "sides": "snow",
   // under gameplay pads
   "padSurface": "RoadIce",
   // the game's own blocks in this surface: PlatformIce…, RoadIce…; null: none

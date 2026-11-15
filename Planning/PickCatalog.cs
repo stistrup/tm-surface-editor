@@ -8,7 +8,12 @@ internal sealed record PickCatalog(
     Dictionary<string, PickCatalog.Pick> Picks,
     Dictionary<string, PickCatalog.Kind> Kinds)
 {
-    public sealed record Named(string Label, string Description);
+    // Sides (ways): the pieces' sides can be chosen too
+    public sealed record Named(string Label, string Description, bool Sides = false);
+
+    // data/sides.jsonc, and each material's own (its theme's)
+    public Dictionary<string, Named> SideWords { get; init; } = [];
+    public Dictionary<string, string> DefaultSides { get; init; } = [];
 
     public sealed record Pick(string Label, string Material, string? Way, string? Option);
 
@@ -17,19 +22,24 @@ internal sealed record PickCatalog(
     public sealed record Choice(string Value, string Label, string Material, string? Way, string? Option);
 
     // labels in their order: ways in theirs is the default order
-    public sealed record Words(Dictionary<string, Named> Materials, Dictionary<string, Named> Ways, Dictionary<string, Named> Options);
+    public sealed record Words(Dictionary<string, Named> Materials, Dictionary<string, Named> Ways, Dictionary<string, Named> Options,
+        Dictionary<string, Named> Sides, Dictionary<string, string> DefaultSides);
 
     public static PickCatalog Load(string dataDir)
     {
         var catalog = Jsonc.Load<PickCatalog>(Path.Combine(dataDir, "picks.jsonc"));
-        var unknown = catalog.Picks.Keys.Where(p => p != "" && !ConversionRules.PieceChoices.Contains(p))
+        var unknown = catalog.Picks.Keys.Where(p => p != "" && !ConversionRules.IsPieceChoice(p))
             .Concat(catalog.Kinds.Values.SelectMany(k => k.Picks).Where(p => !catalog.Picks.ContainsKey(p)))
             .Concat(catalog.Picks.Values.SelectMany(p => new[] { p.Material }.Where(m => !catalog.Materials.ContainsKey(m))
                 .Concat(new[] { p.Way }.Where(w => w is not null && !catalog.Ways.ContainsKey(w)))
                 .Concat(new[] { p.Option }.Where(o => o is not null && !catalog.Options.ContainsKey(o)))!))
             .ToList();
         if (unknown.Count > 0) throw new FormatException($"picks.jsonc: unknown pick(s), material(s), way(s) or option(s) {string.Join(", ", unknown.Distinct())}");
-        return catalog;
+        return catalog with
+        {
+            SideWords = SideChoice.All(dataDir).ToDictionary(s => s.Key, s => new Named(s.Value.Label, "")),
+            DefaultSides = catalog.Materials.Keys.Where(m => Theme.Exists(dataDir, m)).ToDictionary(m => m, m => Theme.Load(dataDir, m).Sides),
+        };
     }
 
     public Dictionary<string, List<Choice>> Choices
@@ -37,5 +47,5 @@ internal sealed record PickCatalog(
 
     public Dictionary<string, string> KindLabels => Kinds.ToDictionary(k => k.Key, k => k.Value.Label);
 
-    public Words Labels => new(Materials, Ways, Options);
+    public Words Labels => new(Materials, Ways, Options, SideWords, DefaultSides);
 }

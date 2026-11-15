@@ -65,7 +65,7 @@ internal sealed class ConversionRun
         BlockCatalog shapes, ItemBuilder items, SurfaceParents surfaceParents, Dictionary<string, List<(Vector3 A, Vector3 B, Vector3 C)>> flatTops)
     {
         (Map, Collection, Rules, DataRules, KnownBlocks, Shapes, Items, SurfaceParents, FlatTops) = (map, collection, rules, dataRules, knownBlocks, shapes, items, surfaceParents, flatTops);
-        var resolver = new ClipResolver(shapes);
+        var resolver = this.resolver = new ClipResolver(shapes);
         Grid = map.GetBlocks().Where(b => !b.IsFree).ToList();
         Placed = resolver.OfAll(Grid);
         Target = resolver.Resolve(Placed);
@@ -76,6 +76,27 @@ internal sealed class ConversionRun
         }
         terrainTop = Grid.Where(b => b.IsGround).SelectMany(b => Cells[b]).GroupBy(c => (c.X, c.Z)).ToDictionary(g => g.Key, g => g.Max(c => c.Y));
         Cover = new CoverArea(this);
+    }
+
+    private readonly ClipResolver resolver;
+    private Dictionary<Int3, List<int>>? byCell;
+
+    // a clipless block here (the stand-in): a neighbour would show clips it hides now, borders where the two joined
+    public bool ClipsShowWithout(CGameCtnBlock block)
+    {
+        if (byCell is null)
+        {
+            byCell = [];
+            for (int i = 0; i < Grid.Count; i++)
+                foreach (var c in Cells[Grid[i]]) (byCell.TryGetValue(c, out var l) ? l : byCell[c] = []).Add(i);
+        }
+        var self = Grid.IndexOf(block);
+        Int3[] steps = [new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0), new(0, 0, 1), new(0, 0, -1)];
+        var near = Cells[block].SelectMany(c => steps.Select(s => c + s)).SelectMany(c => byCell.GetValueOrDefault(c) ?? []).Where(i => i != self).Distinct().ToList();
+        if (near.Count == 0) return false;
+        var with = resolver.Resolve([.. near.Select(i => Placed[i]), Placed[self]]);
+        var without = resolver.Resolve([.. near.Select(i => Placed[i])]);
+        return near.Index().Any(n => without[n.Index].Except(with[n.Index]).Any());
     }
 
     // the resolver's variant, may differ from the placed one (VariantOf)

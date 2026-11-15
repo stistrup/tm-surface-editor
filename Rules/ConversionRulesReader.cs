@@ -122,7 +122,7 @@ internal static class ConversionRulesReader
 
     private static string PieceChoice(JsonElement value)
     {
-        if (value.ValueKind != JsonValueKind.String || !ConversionRules.PieceChoices.Contains(value.GetString())) throw new FormatException($"unknown choice {value}");
+        if (value.ValueKind != JsonValueKind.String || !ConversionRules.IsPieceChoice(value.GetString())) throw new FormatException($"unknown choice {value}");
         return value.GetString()!;
     }
 

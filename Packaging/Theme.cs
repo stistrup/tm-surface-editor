@@ -15,9 +15,19 @@ public sealed class Theme
     public string Family { get; init; } = "";
     public string PadSurface { get; init; } = "";
     public string? BlockWord { get; init; }
+    // data/sides.jsonc: what its sides become unless a pick says otherwise
+    public string Sides { get; init; } = "original";
+    // the road texture's grain or streaks: texture "u" or "v" laid along the road
+    public string RoadAlong { get; init; } = "u";
+
+    [JsonIgnore]
+    public string Name { get; private set; } = "";
 
     [JsonIgnore]
     public string Folder { get; private set; } = "";
+
+    [JsonIgnore]
+    private string DataDir { get; set; } = "";
 
     public string MaterialsFile => Path.Combine(Folder, "materials.jsonc");
 
@@ -40,14 +50,39 @@ public sealed class Theme
             if (loaded.TryGetValue(folder, out var known)) return known;
             var theme = Jsonc.Load<Theme>(Path.Combine(folder, "theme.jsonc"));
             theme.Folder = folder;
+            theme.Name = name;
+            theme.DataDir = dataDir;
             return loaded[folder] = theme;
         }
     }
 
-    // a fresh copy each time; "item:" entries only on item copies, "top:" only on top skins
-    public Dictionary<string, string> Map(string? prefix)
+    public static IEnumerable<Theme> All(string dataDir)
+        => Directory.EnumerateDirectories(Path.Combine(dataDir, "themes")).Order()
+            .Where(d => File.Exists(Path.Combine(d, "theme.jsonc"))).Select(d => Load(dataDir, Path.GetFileName(d)));
+
+    // the theme an item or block of ours was built in, by its prefix; names from before the prefix: the default
+    public static Theme ForItem(string name) => All(Paths.Data).FirstOrDefault(t => name.StartsWith(t.ItemPrefix)) ?? Default;
+
+    public static bool Exists(string dataDir, string name) => File.Exists(Path.Combine(dataDir, "themes", name, "theme.jsonc"));
+
+    // every theme's files: items are stamped with all of them
+    public static IEnumerable<string> AllFiles(string dataDir)
+        => Directory.EnumerateFiles(Path.Combine(dataDir, "themes"), "*.jsonc", SearchOption.AllDirectories).Order();
+
+    // game materials that are sides ("@<role>" in materials.jsonc)
+    [JsonIgnore]
+    public HashSet<string> SideMaterials => sideMaterials ??= [.. Jsonc.Load<Dictionary<string, string>>(MaterialsFile)
+        .Where(kv => kv.Value.StartsWith('@') && !kv.Key.Contains(':')).Select(kv => kv.Key)];
+    private HashSet<string>? sideMaterials;
+
+    public SideChoice SidesOf(string? sides) => SideChoice.Of(DataDir, sides ?? Sides);
+
+    // a fresh copy each time; "item:" entries only on item copies, "top:" only on top skins; "@<role>" by the sides
+    public Dictionary<string, string> Map(string? prefix, string? sides = null)
     {
         var map = Jsonc.Load<Dictionary<string, string>>(MaterialsFile);
+        var side = SidesOf(sides);
+        foreach (var (key, to) in map.Where(kv => kv.Value.StartsWith('@')).ToList()) map[key] = side.Role(to[1..]);
         if (prefix is not null)
             foreach (var (key, to) in map.Where(kv => kv.Key.StartsWith(prefix)).ToList()) map[key[prefix.Length..]] = to;
         return map;

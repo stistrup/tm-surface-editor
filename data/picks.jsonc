@@ -5,6 +5,8 @@
     "original": { "label": "Original", "description": "Stays as it is" },
     "ice": { "label": "Ice", "description": "" },
     "snow": { "label": "Snow", "description": "" },
+    "wood": { "label": "Wood", "description": "" },
+    "plastic": { "label": "Plastic", "description": "" },
     "remove": { "label": "Remove", "description": "Taken out of the map" }
   },
   // in this order; the first that works is the default
@@ -12,9 +14,9 @@
     "native": { "label": "Native equivalent", "description": "The game's own version of the block" },
     "nativesnow": { "label": "Native equivalent, snow on the ground", "description": "The game's own version, with snow over its ground" },
     "nativeflip": { "label": "Native equivalent, flipped", "description": "Turned around: you enter from the other side" },
-    "custom": { "label": "Custom block", "description": "A copy of the block in the material; closest to the original look" },
-    "skin": { "label": "Skinned original", "description": "The original stays, a thin layer on top; smallest maps" },
-    "item": { "label": "Item", "description": "An item in its place" },
+    "custom": { "label": "Custom block", "description": "A copy of the block in the material; closest to the original look", "sides": true },
+    "skin": { "label": "Skinned original", "description": "The original stays, a thin layer on top; smallest maps", "sides": true },
+    "item": { "label": "Item", "description": "An item in its place", "sides": true },
     "plain": { "label": "Plain block", "description": "Without its effect, as a plain block" },
     "gate": { "label": "Plain block, effect on a gate", "description": "Plain, with a gate that keeps the effect" },
     "cover": { "label": "Snow cover", "description": "The ground covered; the column above it follows" },
@@ -44,18 +46,26 @@
     "remove": { "label": "Remove", "material": "remove" },
     "frozen": { "label": "Snow, native snow tree", "material": "snow", "way": "swap" },
     "copy": { "label": "Ice, item", "material": "ice", "way": "item" },
-    "sink": { "label": "Sunk", "material": "original", "way": "sunk" }
+    "sink": { "label": "Sunk", "material": "original", "way": "sunk" },
+    // "<theme>:<way>": a way in another theme (data/themes/<theme>); bare ways are ice
+    "wood:custom": { "label": "Wood, custom block", "material": "wood", "way": "custom" },
+    "wood:skin": { "label": "Wood, skinned original", "material": "wood", "way": "skin" },
+    "wood:item": { "label": "Wood, item", "material": "wood", "way": "item" },
+    "plastic:twin": { "label": "Plastic, native equivalent", "material": "plastic", "way": "native" },
+    "plastic:custom": { "label": "Plastic, custom block", "material": "plastic", "way": "custom" },
+    "plastic:skin": { "label": "Plastic, skinned original", "material": "plastic", "way": "skin" },
+    "plastic:item": { "label": "Plastic, item", "material": "plastic", "way": "item" }
   },
   // "remove" left out of the lists for now (not a surface choice); the converter still reads it
   "kinds": {
-    "roads": { "label": "Roads, platforms", "picks": ["", "twin", "custom", "skin"] },
-    "waypoints": { "label": "Start, checkpoint, finish", "picks": ["", "twin", "custom", "skin"] },
-    "deco": { "label": "Deco, walls", "picks": ["", "snow", "custom", "twin", "twincover", "skin"] },
+    "roads": { "label": "Roads, platforms", "picks": ["", "twin", "custom", "skin", "wood:custom", "wood:skin", "plastic:twin", "plastic:custom", "plastic:skin"] },
+    "waypoints": { "label": "Start, checkpoint, finish", "picks": ["", "twin", "custom", "skin", "wood:custom", "wood:skin", "plastic:twin", "plastic:custom", "plastic:skin"] },
+    "deco": { "label": "Deco, walls", "picks": ["", "snow", "custom", "twin", "twincover", "skin", "wood:custom", "wood:skin", "plastic:custom", "plastic:skin"] },
     // the snow rule leaves these alone
-    "decononsnow": { "label": "Pillars, free-placed deco", "picks": ["", "custom", "twin"] },
+    "decononsnow": { "label": "Pillars, free-placed deco", "picks": ["", "custom", "twin", "wood:custom", "plastic:custom"] },
     "terrain": { "label": "Terrain", "picks": ["", "snow"] },
     "shore": { "label": "Shore, water", "picks": ["", "snow"] },
-    "special": { "label": "Special", "picks": ["", "plain", "twin", "custom", "gate"] },
+    "special": { "label": "Special", "picks": ["", "plain", "twin", "custom", "gate", "wood:custom", "plastic:custom"] },
     // gate waypoints on the ground: native gate in the air, its ground as snow
     "gateground": { "label": "Gate on the ground", "picks": ["", "snow"] },
     "specialground": { "label": "Special, on the ground", "picks": ["", "custom", "plain", "snow"] },

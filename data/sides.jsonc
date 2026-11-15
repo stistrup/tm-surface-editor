@@ -1,0 +1,10 @@
+// what a block's sides become (penalty ground, deco, cliffs): the "@sides", "@cliff" and "@skin" roles in each theme's materials.jsonc.
+// Each theme picks its default (theme.jsonc "sides"); a pick can name another ("plastic/dirt:custom").
+// "native": the game's own; "": left out
+{
+  "original": { "label": "Original", "sides": "native", "cliff": "native", "skin": "" },
+  "snow": { "label": "Snow", "sides": "PlatformIce_DecoHill", "cliff": "PlatformIce_DecoHill2", "skin": "CustomSnow" },
+  "dirt": { "label": "Dirt", "sides": "CustomDirt", "cliff": "CustomDirt", "skin": "CustomDirt" },
+  "sand": { "label": "Sand", "sides": "CustomSand", "cliff": "CustomSand", "skin": "CustomSand" },
+  "grass": { "label": "Grass", "sides": "CustomGrass", "cliff": "CustomGrass", "skin": "CustomGrass" }
+}

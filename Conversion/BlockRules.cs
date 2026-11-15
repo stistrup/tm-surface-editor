@@ -79,6 +79,7 @@ internal static partial class BlockRules
         var choice = run.Rules.PieceChoice(block);
         // picks only: engine-off renames first, as the rules do
         if (!run.Rules.RulesOn && !block.Name.StartsWith("Gate")) Gates.EngineOff(block, run);
+        using var theme = run.Items.WithTheme(run.Rules.PieceTheme(block), run.Rules.PieceSides(block));
         switch (choice)
         {
             case "keep":
@@ -274,7 +275,7 @@ internal static partial class BlockRules
         var (name, shapes, items) = (block.Name, run.Shapes, run.Items);
         var (variant, mobil, collection, noClips) = (VariantOf(block), MobilOf(block), run.Map.Collection!.Value, ConversionRun.NoClips);
         var stack = NeedsNativeUnder(block, run);
-        var (self, selfBaked) = !stack && ExposedThemedClips(block, run) is { } exposed ? (SurfaceTops.Clipless, exposed) : (name, noClips);
+        var (self, selfBaked) = !stack && ClipArchetype(block, run) is { } other ? other : (name, noClips);
         var built = items.BlockFor(name, self, block.IsGround, variant, mobil, collection, selfBaked, lift: stack) is { } own
             ? (own, self, selfBaked)
             : run.SurfaceParents.Of(name, variant, run.Clips(block)) is { } parent
@@ -293,14 +294,15 @@ internal static partial class BlockRules
     }
 
     // the game draws the archetype's clips over a custom body: shown clips with a surface the theme converts go into the body,
-    // on a clipless stand-in (air only, as it has no ground variant)
-    private static IReadOnlySet<int>? ExposedThemedClips(CGameCtnBlock block, ConversionRun run)
+    // on a clipless stand-in (air only, as it has no ground variant); not where a neighbour joins it, or that one shows its border
+    private static (string Archetype, IReadOnlySet<int> Baked)? ClipArchetype(CGameCtnBlock block, ConversionRun run)
     {
         if (!run.Rules.Options.ClipSidesInBlock || block.IsGround || block.IsFree || run.Shapes.EnvironmentHas(SurfaceTops.Clipless) == false) return null;
         var shown = run.Clips(block);
         var theme = run.Items.Theme;
         var map = theme.Map(null);
-        return run.Shapes.ClipMaterials(block.Name, false, VariantOf(block), MobilOf(block), shown).Any(m => theme.SwappedIn(map, m)) ? shown : null;
+        return run.Shapes.ClipMaterials(block.Name, false, VariantOf(block), MobilOf(block), shown).Any(m => theme.SwappedIn(map, m))
+            && !run.ClipsShowWithout(block) ? (SurfaceTops.Clipless, shown) : null;
     }
 
     // vegetation and blended hill/cliff terrain only come from the native block: keep it under the iced body
@@ -347,8 +349,8 @@ internal static partial class BlockRules
 
     private static readonly string[] TwinPrefixes = ["DecoPlatform", "DecoHill", "DecoCliff10", "DecoCliff8", "DecoCliff"];
 
-    // the game's scenery families: deco and grandstands (a stand's PlatformTech floor isn't a road)
-    private static readonly string[] SceneryFamilies = ["Deco", "Stand"];
+    // the game's scenery families: deco, grandstands, canopies (a stand's floor, a canopy's shell look like road, aren't one)
+    private static readonly string[] SceneryFamilies = ["Deco", "Stand", "Canopy"];
 
     // scenery whatever the settings: those families, pillar blocks, and blocks with neither a road name nor a material the theme makes its road
     public static bool IsScenery(string name, int flags, ConversionRun run)

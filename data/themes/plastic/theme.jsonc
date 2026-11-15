@@ -1,0 +1,16 @@
+// the game's plastic platforms: road and deco take PlatformPlastic
+{
+  // in item names: gPlastic_<block>_Plastic…
+  "tag": "Plastic",
+  "surfaces": ["Plastic"],
+  // not Wood: skins keep the library's TrackWall, which drives as Wood
+  "replaces": ["Asphalt", "Dirt", "Grass", "Green", "Sand", "RoadIce", "Ice"],
+  "road": "PlatformPlastic_PlatformTech",
+  "cover": "PlatformPlastic_PlatformTech",
+  "family": "PlatformPlastic",
+  // sides by default (data/sides.jsonc)
+  "sides": "original",
+  "padSurface": "Plastic",
+  // the game's own blocks in it: PlatformPlastic…
+  "blockWord": "Plastic"
+}

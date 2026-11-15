@@ -21,6 +21,7 @@ internal static class ItemExporters
             KeepFace = top ? n => FacesUp(n, tilt) : null,
             LipAs = top ? null : m => theme.SwappedIn(map, m) ? LipLook(m, recipe.Skin, catalog.Environment) : null,
             PlatformLayout = top,
+            LayoutAlongV = theme.RoadAlong == "v",
         };
     }
 

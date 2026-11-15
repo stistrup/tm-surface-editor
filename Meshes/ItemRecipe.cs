@@ -40,7 +40,7 @@ public sealed record ItemStyle(bool ZoneSides = false, bool TerrainCover = true,
     public const float DefaultSkinEdge = 90;
 }
 
-public sealed record ItemRequest(string Block, bool Ground, int Variant, int Mobil, IReadOnlySet<int> Clips, ItemKind Kind, Vector2 Tilt, string? Environment, ItemStyle Style, IReadOnlyList<Vector2>? CoverKeep = null);
+public sealed record ItemRequest(string Block, bool Ground, int Variant, int Mobil, IReadOnlySet<int> Clips, ItemKind Kind, Vector2 Tilt, string? Environment, ItemStyle Style, IReadOnlyList<Vector2>? CoverKeep = null, string ThemeName = Theme.DefaultName, string? Sides = null);
 
 // what a kind of item takes from its block
 internal sealed record ItemRecipe(ItemKind Kind, bool Top, bool TopsBody, bool Body, bool Skin, bool OnTerrainBody, bool ZoneSides)
@@ -86,6 +86,7 @@ internal sealed record ItemRecipe(ItemKind Kind, bool Top, bool TopsBody, bool B
             TiltKey(r.Tilt),
             r.Variant == 0 && r.Mobil == 0 ? "" : $"_v{r.Variant}m{r.Mobil}",
             r.CoverKeep is null ? "" : "_n" + KeepKey(r.CoverKeep),
+            r.Sides is null ? "" : "_s" + r.Sides,
             "_" + ClipKey.OfSet(r.Clips),
         ];
         var name = string.Concat(parts);

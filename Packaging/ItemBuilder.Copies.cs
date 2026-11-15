@@ -35,7 +35,9 @@ public sealed partial class ItemBuilder
         }
         return [.. copies.Select(c => (Action<TextWriter>)(log =>
         {
-            var copy = BuildItemCopy(c.ItemId, c.Environment, log, plan: false);
+            BuiltItem? copy;
+            try { copy = BuildItemCopy(c.ItemId, c.Environment, log, plan: false); }
+            finally { if (new BlockCatalog(Paths.ExtractedStadium) { Environment = c.Environment }.ItemFile(c.ItemId) is { } file) Built(ItemPath(CopyName(c.ItemId, file))); }
             lock (itemCopies) itemCopies[CopyKey(c.Environment, c.ItemId)] = copy;
         }))];
     }
@@ -55,13 +57,14 @@ public sealed partial class ItemBuilder
             {
                 if (plan)
                 {
+                    lock (unbuilt) unbuilt.Add(path);
                     lock (plannedCopies) plannedCopies.TryAdd(CopyKey(environment, itemId), (itemId, environment));
                     return new BuiltItem(ident, path, (1, 1));
                 }
                 var catalog = new BlockCatalog(Paths.ExtractedStadium) { Environment = environment };
                 var pieces = new MeshExporter(catalog.Files, materialMap).ExportItem(file, out var reason) ?? throw new InvalidDataException(reason);
                 lock (Missing) Missing.UnionWith(catalog.Missing);
-                if (Finish(name, pieces, null, catalog, builtFrom, log) is { } error) throw new InvalidDataException(error);
+                if (Finish(Theme, new HashSet<string>(), name, pieces, null, catalog, builtFrom, log) is { } error) throw new InvalidDataException(error);
             }
             var header = Gbx.ParseHeaderNode<CGameItemModel>(path).Ident;
             return new BuiltItem(ident with { Collection = header.Collection, Author = header.Author }, path, (1, 1));

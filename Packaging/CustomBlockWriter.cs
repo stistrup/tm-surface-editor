@@ -8,11 +8,7 @@ using GBX.NET.Serialization.Chunking;
 
 namespace TmSurfaceEditor;
 
-public sealed record BuiltBlock(Ident Ident, string FilePath, string ItemPath)
-{
-    // planning: its item isn't built yet
-    public bool Waiting => !File.Exists(ItemPath);
-}
+public sealed record BuiltBlock(Ident Ident, string FilePath, string ItemPath);
 
 // custom block = a native block (archetype) with its variant's body replaced; the game keeps clips, pillars and joins
 public static class CustomBlockWriter

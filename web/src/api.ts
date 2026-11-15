@@ -249,6 +249,8 @@ export interface PreviewDecision {
   group: string | null
   // its kind's picks that wouldn't change it
   cannot?: string[] | null
+  // has sides (penalty ground, deco, cliffs) a pick can choose for
+  sides?: boolean
 }
 
 // data/picks.jsonc
@@ -263,13 +265,17 @@ export interface PieceChoice {
 export interface Named {
   label: string
   description: string
+  // ways: the pieces' sides can be chosen too
+  sides?: boolean
 }
 
-// material, way and option labels; ways in their default order
+// material, way and option labels; ways in their default order; sides (data/sides.jsonc) and each material's own
 export interface PickWords {
   materials: Record<string, Named>
   ways: Record<string, Named>
   options: Record<string, Named>
+  sides: Record<string, Named>
+  defaultSides: Record<string, string>
 }
 
 export interface PreviewResult {

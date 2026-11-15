@@ -15,9 +15,18 @@ internal static class MaterialLib
         return m.Success && Regex.IsMatch(m.Groups[1].Value, @"DUvLayer\s*\(\s*Lightmap\s*,\s*0\s*\)");
     }
 
+    // a material that links a game material drives as that one (the library has PlatformPlastic_PlatformTech as RoadIce)
     public static string? Surface(string name)
-        => Regex.Match(Text, $@"DMaterial\({Regex.Escape(name)}\)[^D]*(?:D(?!Material)[^D]*)*?DSurfaceId\s*\((\w+)\)") is { Success: true } m
-            ? m.Groups[1].Value : null;
+        => surfaces.GetOrAdd(name, n => Regex.Match(Text, $@"DMaterial\({Regex.Escape(n)}\)((?:(?!DMaterial\().)*)", RegexOptions.Singleline) is { Success: true } m
+            ? LinkedSurface(m.Groups[1].Value) ?? (Regex.Match(m.Groups[1].Value, @"DSurfaceId\s*\((\w+)\)") is { Success: true } s ? s.Groups[1].Value : null)
+            : null);
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string?> surfaces = new();
+
+    private static string? LinkedSurface(string entry)
+        => Regex.Match(entry, @"DLinkFull\s*\(([^)]*)\)") is { Success: true } link
+            && GameFiles.OnDisk(Path.Combine(Paths.ExtractedStadium, link.Groups[1].Value.Trim().Replace('\\', '/') + ".Material.Gbx")) is var file && File.Exists(file)
+            ? Gbx.ParseNode<CPlugMaterial>(file).SurfaceId.ToString() : null;
 
     private static readonly Lazy<string> Lib = new(() => File.ReadAllText(Path.Combine(Paths.Game, "NadeoImporterMaterialLib.txt")));
 
@@ -59,11 +68,7 @@ internal static class MaterialLib
 
     public static Dictionary<string, string> Surfaces(IEnumerable<string> names)
     {
-        return names.ToDictionary(n => n, n =>
-        {
-            var m = Regex.Match(Text, $@"DMaterial\({Regex.Escape(n)}\)[^D]*(?:D(?!Material)[^D]*)*?DSurfaceId\s*\((\w+)\)");
-            return m.Success ? m.Groups[1].Value
-                : throw new InvalidDataException($"material {n} isn't in NadeoImporterMaterialLib.txt; map it in the theme's materials.jsonc");
-        });
+        return names.ToDictionary(n => n, n => Surface(n)
+            ?? throw new InvalidDataException($"material {n} isn't in NadeoImporterMaterialLib.txt; map it in the theme's materials.jsonc"));
     }
 }

@@ -22,6 +22,8 @@ internal sealed partial class ConversionPreview(string dataDir)
         public string? Group { get; init; }
         // its kind's picks that wouldn't change it
         public List<string>? Cannot { get; init; }
+        // it has sides (penalty ground, deco, cliffs) a pick can choose for
+        public bool Sides { get; init; }
     }
 
     private List<string>? CannotOf(ConversionRun run, object piece, string kind)
@@ -72,10 +74,10 @@ internal sealed partial class ConversionPreview(string dataDir)
 
     public sealed record LookTexture(string Role, string Name, string? Image);
 
-    // the theme's materials.jsonc as is, and every material it names
+    // the theme's materials.jsonc with its own sides, and every material it names
     private (Dictionary<string, string> Swaps, Dictionary<string, Look> Looks) ThemeLooks(BlockCatalog shapes)
     {
-        var swaps = Jsonc.Load<Dictionary<string, string>>(Theme.Load(dataDir).MaterialsFile);
+        var swaps = Theme.Load(dataDir).Map(null);
         var view = new MapView(shapes);
         var gameData = Path.GetDirectoryName(Paths.ExtractedStadium)!;
         var looks = new Dictionary<string, Look>();
@@ -133,11 +135,22 @@ internal sealed partial class ConversionPreview(string dataDir)
             (buildsFor, buildCancel) = (mapPath, new());
             cancel = buildCancel.Token;
         }
+        var planner = builder;
         building = Task.Run(() =>
         {
             // the skipped ones are planned again when their map is previewed
-            try { ItemBuilder.RunBuilds(jobs, n => buildDone = n, cancel); }
-            catch (OperationCanceledException) { Console.WriteLine($"preview builds: stopped after {buildDone} of {jobs.Count}, another map opened"); }
+            try
+            {
+                // runs that planned while this built: theirs follow at once, or they'd wait for the next run
+                for (var done = 0; jobs.Count > 0; jobs = planner.TakePlanned())
+                {
+                    buildTotal = done + jobs.Count;
+                    var before = done;
+                    ItemBuilder.RunBuilds(jobs, n => buildDone = before + n, cancel);
+                    done += jobs.Count;
+                }
+            }
+            catch (OperationCanceledException) { Console.WriteLine($"preview builds: stopped after {buildDone} of {buildTotal}, another map opened"); }
             catch (Exception e) { Console.Error.WriteLine($"preview builds: {e.Message}"); }
             // results from before point at pieces that exist now
             Interlocked.Increment(ref builds);
@@ -313,8 +326,9 @@ internal sealed partial class ConversionPreview(string dataDir)
                     Choices = picks!.Choices,
                     KindLabels = picks.KindLabels,
                     Words = picks.Labels,
-                    PendingBlocks = [.. before.Blocks.Index().Where(b => run.Waiting.TryGetValue(b.Item, out var file) && !File.Exists(file) || run.Customs.TryGetValue(b.Item, out var c) && c.Waiting).Select(b => b.Index)],
-                    PendingItems = [.. before.Items.Index().Where(o => run.WaitingItems.TryGetValue(o.Item.Item, out var file) && !File.Exists(file)).Select(o => o.Index)],
+                    PendingBlocks = [.. before.Blocks.Index().Where(b => run.Waiting.TryGetValue(b.Item, out var file) && run.Items.Unbuilt(file)
+                        || run.Customs.TryGetValue(b.Item, out var c) && run.Items.Unbuilt(c.ItemPath)).Select(b => b.Index)],
+                    PendingItems = [.. before.Items.Index().Where(o => run.WaitingItems.TryGetValue(o.Item.Item, out var file) && run.Items.Unbuilt(file)).Select(o => o.Index)],
                 };
             return (result, scene);
         }
@@ -333,10 +347,15 @@ internal sealed partial class ConversionPreview(string dataDir)
             Kind = kind,
             Group = groups.PathOf(kind, name, run.Shapes.Waypoint(name), tree: false),
             Key = before.Keys[i],
+            Sides = HasSides(run, name, before.Flags[i]),
             // a shared block picked by its cell's key before keys told them apart
             Picked = rulesNow.Pieces.GetValueOrDefault(Normal(before.Keys[i])) ?? rulesNow.Pieces.GetValueOrDefault(Normal(before.PlainKeys[i])),
         };
     }
+
+    private static bool HasSides(ConversionRun run, string name, int flags)
+        => run.Shapes.Materials(name, (flags & BlockFlags.Ground) != 0, (flags >> 21) & 0x3F, flags & 0xFFF, ConversionRun.NoClips) is { } materials
+            && materials.Any(run.Items.Theme.SideMaterials.Contains);
 
     private static Decision ItemDecision(ConversionRun run, (CGameCtnAnchoredObject Item, string Id, Vec3 Position) was, HashSet<object> now, ConversionRules rulesNow, GroupCatalog groups)
     {

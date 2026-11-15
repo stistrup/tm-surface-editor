@@ -17,7 +17,7 @@ internal sealed partial record CustomBlockMesh(string Item, string Source, int V
     {
         if (!Paths.IsOurs(blockName) || !blockName.EndsWith(Suffix)) return null;
         var item = BlockExtras().Replace(blockName[(blockName.IndexOf('\\') + 1)..^Suffix.Length], "");
-        var theme = Theme.Default;
+        var theme = Theme.ForItem(item);
         if (item.IndexOf(theme.NameTag) <= 0) return null;
         var source = ItemRecipe.SourceBlock(item, theme);
         var variant = VariantMark().Match(item);

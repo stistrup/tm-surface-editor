@@ -44,8 +44,35 @@ public sealed class ConversionRules
     // grid blocks sharing a cell and name, by their own keys (PieceKeys); set per map before anything moves them
     public Dictionary<GBX.NET.Engines.Game.CGameCtnBlock, string> AmbiguousKeys { get; set; } = new(ReferenceEqualityComparer.Instance);
 
+    // the way of a block's pick, without its material
+    public string? PieceChoice(GBX.NET.Engines.Game.CGameCtnBlock block) => SplitChoice(RawChoice(block)).Way;
+
+    // the theme a block's pick names ("wood:custom"); null: the default
+    public string? PieceTheme(GBX.NET.Engines.Game.CGameCtnBlock block) => SplitChoice(RawChoice(block)).Theme;
+
+    // the sides a block's pick names ("plastic/dirt:custom"); null: the theme's own
+    public string? PieceSides(GBX.NET.Engines.Game.CGameCtnBlock block) => SplitChoice(RawChoice(block)).Sides;
+
+    // "<theme>[/<sides>]:<way>", or a bare way in the default theme
+    public static (string? Theme, string? Sides, string? Way) SplitChoice(string? choice)
+    {
+        var at = choice?.IndexOf(':') ?? -1;
+        if (at <= 0) return (null, null, choice);
+        var (material, way) = (choice![..at], choice[(at + 1)..]);
+        var slash = material.IndexOf('/');
+        return slash > 0 ? (material[..slash], material[(slash + 1)..], way) : (material, null, way);
+    }
+
+    // every way in every theme: "custom", "wood:custom", …
+    public static IEnumerable<string> AllPieceChoices(string dataDir)
+        => PieceChoices.Concat(Theme.All(dataDir).Where(t => t.Name != Theme.DefaultName).SelectMany(t => PieceChoices.Select(c => $"{t.Name}:{c}")));
+
+    public static bool IsPieceChoice(string? choice)
+        => SplitChoice(choice) is var (theme, sides, way) && PieceChoices.Contains(way)
+            && (theme is null || Theme.Exists(Paths.Data, theme)) && (sides is null || SideChoice.All(Paths.Data).ContainsKey(sides));
+
     // a shared block's own key first, then the cell's
-    public string? PieceChoice(GBX.NET.Engines.Game.CGameCtnBlock block)
+    private string? RawChoice(GBX.NET.Engines.Game.CGameCtnBlock block)
         => block.IsFree
             ? block.AbsolutePositionInMap is { } p ? ChoiceAt(block.Name, new System.Numerics.Vector3(p.X, p.Y, p.Z)) : null
             : AmbiguousKeys.TryGetValue(block, out var own) && Pieces.TryGetValue(NormalizeKeep(own), out var picked) ? picked

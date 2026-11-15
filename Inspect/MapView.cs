@@ -300,9 +300,9 @@ public sealed class MapView(BlockCatalog shapes)
                     var json = Path.Combine(Paths.Pieces, name + ".pieces.json");
                     meshes[key] = File.Exists(json) ? Pieces(Jsonc.Load<List<MeshPiece>>(json), null, ours: true) : EmbeddedPieces(id);
                 }
-                waypoint = shapes.Waypoint(ItemRecipe.SourceBlock(name, Theme.Default));
+                waypoint = shapes.Waypoint(ItemRecipe.SourceBlock(name, Theme.ForItem(name)));
                 info["kind"] = "ice item";
-                info["sourceBlock"] = ItemRecipe.SourceBlock(name, Theme.Default);
+                info["sourceBlock"] = ItemRecipe.SourceBlock(name, Theme.ForItem(name));
             }
             else if (!meshes.ContainsKey(key))
             {

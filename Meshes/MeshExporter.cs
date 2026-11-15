@@ -28,6 +28,9 @@ public sealed class MeshExporter(GameFiles files, IReadOnlyDictionary<string, st
     public bool VegetTrees { get; init; }
     public bool PlatformLayout { get; init; }
 
+    // road layout: texture v along the road, u across (the theme's grain runs along v)
+    public bool LayoutAlongV { get; init; }
+
     // gets plain-snow UVs
     public string Cover { get; init; } = Theme.Default.Cover;
 
@@ -119,7 +122,7 @@ public sealed class MeshExporter(GameFiles files, IReadOnlyDictionary<string, st
         }
         roadLaid.Clear();
         foreach (var (path, transform) in list) AddPrefab(path, transform, pieces, depth: 0);
-        RoadLayout.Apply(pieces, roadLaid);
+        RoadLayout.Apply(pieces, roadLaid, LayoutAlongV);
         return pieces;
     }
 

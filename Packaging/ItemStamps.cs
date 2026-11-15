@@ -4,7 +4,7 @@ using System.Text;
 namespace TmSurfaceEditor;
 
 // next to each item's pieces: what built it, so unchanged items aren't built again
-internal sealed class ItemStamps(string dataDir, Theme theme)
+internal sealed class ItemStamps(string dataDir)
 {
     // bump to rebuild every item
     private const int PipelineVersion = 15;
@@ -48,5 +48,5 @@ internal sealed class ItemStamps(string dataDir, Theme theme)
     private static string CodeFile => typeof(ItemStamps).Assembly.Location is { Length: > 0 } dll ? dll : Environment.ProcessPath!;
 
     private string Tools() => tools ??= Hash(File.ReadAllBytes(CodeFile)
-        .Concat(File.ReadAllBytes(BuildScript)).Concat(theme.Files.SelectMany(File.ReadAllBytes)).ToArray());
+        .Concat(File.ReadAllBytes(BuildScript)).Concat(Theme.AllFiles(dataDir).SelectMany(File.ReadAllBytes)).ToArray());
 }

@@ -33,13 +33,6 @@ const showPreview = async () => {
   preview.lookVersion++
 }
 
-const busy = computed(() => {
-  if (preview.showOriginal) return ''
-  if (preview.loading) return 'Previewing…'
-  const building = preview.building
-  return building ? `Building pieces ${building.done} of ${building.total}…` : ''
-})
-
 const hoverName = computed(() => (store.hovered === null ? '' : displayName(store.infos[store.hovered])))
 
 const createView = () =>
@@ -150,12 +143,6 @@ onBeforeUnmount(() => {
       <div v-if="store.currentMap" :class="$style.titleBar">
         <button type="button" :class="$style.mapTitle" :title="store.currentMap.path" @click="store.revealMap()">{{ store.currentMap.name }}</button>
         <DocumentActions />
-      </div>
-      <div v-if="store.scene" :class="$style.topLeft">
-        <div v-if="busy" :class="$style.busy" role="status">
-          <span :class="$style.spinner" aria-hidden="true" />
-          {{ busy }}
-        </div>
       </div>
       <div v-if="store.scene" :class="$style.topRight">
         <button type="button" :class="$style.home" title="Whole map (Home)" aria-label="Whole map" @click="store.view?.frameAll()">
@@ -278,16 +265,6 @@ onBeforeUnmount(() => {
   color: var(--text);
 }
 
-.topLeft {
-  position: absolute;
-  top: 34px;
-  left: calc(var(--side-width, 0px) + 10px);
-  z-index: 1;
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
 /* left of the panels */
 .topRight {
   position: absolute;
@@ -311,33 +288,6 @@ onBeforeUnmount(() => {
 
 .home:hover {
   background: var(--header);
-}
-
-.busy {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 4px 10px;
-  color: var(--strong);
-  pointer-events: none;
-  background: var(--field);
-  border: 1px solid var(--line);
-  border-radius: 2px;
-}
-
-.spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--accent);
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .tooltip {

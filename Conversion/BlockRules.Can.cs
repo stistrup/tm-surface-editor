@@ -7,7 +7,14 @@ namespace TmSurfaceEditor;
 // Optimistic where only a build can tell (custom, skin, tops, snow on deco)
 internal static partial class BlockRules
 {
-    public static bool Can(string pick, CGameCtnBlock block, ConversionRun run) => pick switch
+    public static bool Can(string pick, CGameCtnBlock block, ConversionRun run)
+    {
+        var (theme, sides, way) = ConversionRules.SplitChoice(pick);
+        using var _ = run.Items.WithTheme(theme, sides);
+        return CanWay(way!, block, run);
+    }
+
+    private static bool CanWay(string pick, CGameCtnBlock block, ConversionRun run) => pick switch
     {
         "twin" => TwinOf(block, run) is not null,
         "twincover" => CoverTwinOf(block, run) is not null,

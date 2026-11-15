@@ -1,0 +1,90 @@
+// Nadeo material -> NadeoImporter material, for the plastic theme
+{
+  "RoadTech": "PlatformPlastic_PlatformTech",
+  "RoadDirt": "PlatformPlastic_PlatformTech",
+  "PlatformTech": "PlatformPlastic_PlatformTech",
+  "TrackBorders": "TrackBorders",
+  "CollisionTrackBorder": "TrackBorders",
+
+  "Technics": "Technics",
+  "TechnicsTrims": "TechnicsTrims",
+  "TechnicsTrimsColorize": "TechnicsTrims",
+  "LightSpot": "LightSpot",
+  "DecalPaint2Logo4x1": "DecalPaint2Logo4x1",
+
+  // timer screens behind the digits
+  "ChronoCheckpoint": "native",
+  "ChronoFinish": "native",
+
+  // empty = left out
+  // per block: "<block pattern>|<material>"
+  // the black band where the tech road turns into the bump road; on ice both sides look alike
+  "*ToRoadBump*|DecalMarks": "",
+  "GrassFence": "",
+  "Water": "",
+  "SeaFloor": "",
+  "WaterBottom": "",
+  "LightShape": "",
+
+  "ThemeSnowRoad": "PlatformPlastic_PlatformTech",
+  // "native": the game's own material (not in the importer library), linked after import
+  "ThemeSnowRoadBorder": "native",
+  // "@sides", "@cliff", "@skin": the sides the pick or the theme chooses (data/sides.jsonc)
+  "DecoHill": "@sides",
+  "DecoHill2": "@cliff",
+  "Deco": "@sides",
+  "Penalty": "@sides",
+  "Grass": "@sides",
+  "Land": "@sides",
+  "HillPxz": "@sides",
+  "TransitionRocksToLand": "@sides",
+  // terrain blend shaders, named after the shader
+  "Tech3 Block PyPxz_Ids": "PlatformPlastic_PlatformTech",
+  "Tech3 Block PyPxz_Ids_Tex": "PlatformPlastic_PlatformTech",
+  "DecoCliff": "@cliff",
+  "DecoCliffBase": "@cliff",
+  "OpenTechBorders": "native",
+  "DecalPlatform": "PlatformPlastic_DecalPlatform",
+  "DecalPaintSponsor4x1NoColorizeA": "DecalPaintSponsor4x1A",
+  "DecalPaintSponsor4x1NoColorizeB": "DecalPaintSponsor4x1B",
+  "DecalPaintSponsor4x1NoColorizeC": "DecalPaintSponsor4x1C",
+  "DecalPaintSponsor4x1NoColorizeD": "DecalPaintSponsor4x1D",
+  "RoadBump": "PlatformPlastic_PlatformTech",
+  "CollisionMetal": "Technics",
+  // "item:" only applies to item copies
+  "ItemInflatableTube": "PlatformPlastic_PlatformTech",
+  "item:CollisionMetal": "PlatformPlastic_PlatformTech",
+  // "skin:" only applies to skins
+  "skin:Deco": "@skin",
+  "skin:DecoHill": "@skin",
+  "skin:DecoHill2": "@skin",
+  "skin:Grass": "@skin",
+  "skin:Land": "@skin",
+  "skin:Penalty": "@skin",
+  // "top:" only applies to top skins
+  "top:TrackWall": "PlatformPlastic_PlatformTech",
+  "top:TrackWallClips": "PlatformPlastic_PlatformTech",
+  "top:Structure": "PlatformPlastic_PlatformTech",
+  "ItemInflatableMat": "PlatformPlastic_PlatformTech",
+  "ItemInflatableFloor": "PlatformPlastic_PlatformTech",
+  "ItemRamp": "PlatformPlastic_PlatformTech",
+  "Unknown": "CustomConcrete",
+  // canopy: the glass stays the game's own, the shell and collision turn plastic
+  "CanopyGlass": "native",
+  "Canopy": "PlatformPlastic_PlatformTech",
+  "CollisionCanopy": "PlatformPlastic_PlatformTech",
+  "ItemObstacleLightOn": "LightSpot",
+  "SpeedometerLight": "SpeedometerLight_Dyna",
+  "ThemeRallyCastleBorders": "CustomConcrete",
+  "ThemeRallyCastleWall": "CustomConcrete",
+  "ThemeRallyCastleWallUV": "CustomConcrete",
+  "Show4x1": "Ad4x1Screen",
+  "TechnicsStep": "Technics",
+  "CollisionIce": "PlatformPlastic_PlatformTech",
+  "CollisionTurbo": "PlatformPlastic_PlatformTech",
+  "RoadTechSubIce": "PlatformPlastic_PlatformTech",
+  // the library's TrackWall/Structure render wood/black; the game's own look right
+  "TrackWall": "native",
+  "TrackWallClips": "native",
+  "Structure": "native"
+}

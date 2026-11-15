@@ -7,7 +7,7 @@ internal sealed record ItemMaterials(Dictionary<string, string> Map, HashSet<str
 {
     public static ItemMaterials For(ItemRequest r, ItemRecipe recipe, Theme theme, string? environment)
     {
-        var map = theme.Map(recipe.Top ? "top:" : recipe.Skin ? "skin:" : null);
+        var map = theme.Map(recipe.Top ? "top:" : recipe.Skin ? "skin:" : null, r.Sides);
         ApplyBlockPatterns(map, r.Block);
         if (recipe.Body && r.Kind != ItemKind.CoveredGround) RemoveUncoveredDeco(map, theme, r.Block, recipe.ZoneSides);
         // terrain snow: the cut decides, not the map

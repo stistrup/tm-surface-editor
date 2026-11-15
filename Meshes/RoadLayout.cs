@@ -30,9 +30,9 @@ internal static class RoadLayout
         public float Width => Max - Min;
     }
 
-    // ice streaks (texture u) along the road, bent around curves and S-bends; roads are found by
+    // the texture's grain (u, or v with alongV) along the road, bent around curves and S-bends; roads are found by
     // where their surface leaves the block (open edges on cell faces)
-    public static void Apply(List<MeshPiece> pieces, HashSet<MeshPiece> roadLaid)
+    public static void Apply(List<MeshPiece> pieces, HashSet<MeshPiece> roadLaid, bool alongV = false)
     {
         if (roadLaid.Count == 0) return;
         var edges = Edges(roadLaid);
@@ -44,7 +44,7 @@ internal static class RoadLayout
             var pos = pieces[i].Positions;
             var uv = new float[pos.Length / 3 * 2];
             for (int v = 0; v < uv.Length / 2; v++)
-                (uv[2 * v], uv[2 * v + 1]) = layout(new Vector3(pos[3 * v], pos[3 * v + 1], pos[3 * v + 2])) is var t ? (t.X, t.Y) : default;
+                (uv[2 * v], uv[2 * v + 1]) = layout(new Vector3(pos[3 * v], pos[3 * v + 1], pos[3 * v + 2])) is var t ? alongV ? (t.Y, t.X) : (t.X, t.Y) : default;
             pieces[i] = pieces[i] with { Uv0 = uv };
         }
     }
