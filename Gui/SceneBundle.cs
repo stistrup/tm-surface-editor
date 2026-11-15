@@ -11,7 +11,7 @@ namespace TmSurfaceEditor;
 internal static class SceneBundle
 {
     // bump when the output changes
-    private const int Format = 47;
+    private const int Format = 48;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 

@@ -11,7 +11,13 @@ public sealed record ClipSide(int Bit, Vector3 Probe)
 }
 
 public sealed record ClipInfo(int Index, string Name, string Type, bool Vertical, string? Group, string? SymmetricGroup,
-    string? VerticalGroup, string? Pair, bool Full, bool Deletable, bool Anti, string MultiDir = "SameDir", string? HorizontalGroup = null);
+    string? VerticalGroup, string? Pair, bool Full, bool Deletable, bool Anti, string MultiDir = "SameDir", string? HorizontalGroup = null, int EdgeRows = 0)
+{
+    // horizontal clips: one prefab per pair of edge ends, row = 4 * first + second
+    public const int End = 0, In = 1, Out = 2, Straight = 3;
+
+    public string? EdgeKey => EdgeRows != 0 ? HorizontalGroup ?? Name : null;
+}
 
 internal static class ClipKey
 {

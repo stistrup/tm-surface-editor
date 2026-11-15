@@ -89,18 +89,25 @@ internal sealed class InspectCommands(string dataDir)
         var shapes = new BlockCatalog(Paths.ExtractedStadium);
         var totals = new Dictionary<(string Kind, string What), int>();
         var details = new List<(string Map, string What, ClipCheck.Clip Clip)>();
+        int edges = 0, edgesWrong = 0;
         foreach (var path in ExpandMaps(rest))
         {
             var result = ClipCheck.Compare(Gbx.ParseNode<CGameCtnChallenge>(path), shapes);
             foreach (var (kind, n) in result.Baked) totals[(kind, "baked")] = totals.GetValueOrDefault((kind, "baked")) + n;
             foreach (var c in result.GameOnly) { totals[(c.Kind, "game")] = totals.GetValueOrDefault((c.Kind, "game")) + 1; details.Add((path, "game shows", c)); }
             foreach (var c in result.OursOnly) { totals[(c.Kind, "ours")] = totals.GetValueOrDefault((c.Kind, "ours")) + 1; details.Add((path, "we show", c)); }
-            Console.WriteLine($"{Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(path)),-30} game shows, we hide {result.GameOnly.Count,5} | we show, game hides {result.OursOnly.Count,5}");
+            Console.WriteLine($"{Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(path)),-30} game shows, we hide {result.GameOnly.Count,5} | we show, game hides {result.OursOnly.Count,5} | edge rows wrong {result.EdgeRowWrong.Count,3}/{result.Edges}");
+            edges += result.Edges;
+            foreach (var c in result.EdgeRowWrong) { edgesWrong++; if (verbose == "edge") details.Add((path, c.Kind, c)); }
         }
         Console.WriteLine();
         foreach (var kind in ClipCheck.Kinds)
             Console.WriteLine($"{kind,-9} baked {totals.GetValueOrDefault((kind, "baked")),6} | game shows, we hide {totals.GetValueOrDefault((kind, "game")),5} | we show, game hides {totals.GetValueOrDefault((kind, "ours")),5}");
-        if (verbose is not null)
+        Console.WriteLine($"edge rows: {edges - edgesWrong} of {edges} as the game");
+        if (verbose == "edge")
+            foreach (var (map, what, c) in details)
+                Console.WriteLine($"  {Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(map))} {c.Name} {c.Cell} on {c.Block} {c.BlockCoord}: {what}");
+        else if (verbose is not null)
             foreach (var g in details.Where(d => d.Clip.Kind == verbose).GroupBy(d => (d.What, d.Clip.Name)).OrderByDescending(g => g.Count()))
             {
                 var (map, _, c) = g.First();

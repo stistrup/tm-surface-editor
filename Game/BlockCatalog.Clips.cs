@@ -36,8 +36,16 @@ public sealed partial class BlockCatalog
                 BlockParts.IsVertical(clips[i]), NonEmpty(node?.ClipGroupId), NonEmpty(node?.SymmetricalClipGroupId),
                 NonEmpty((node as CGameCtnBlockInfoClipVertical)?.VerticalClipGroupId), NonEmpty(node?.ASymmetricalClipId),
                 node?.IsFullFreeClip ?? false, node?.CanBeDeletedByFullFreeClip ?? false, IsAntiClip(node), node?.TopBottomMultiDir.ToString() ?? "SameDir",
-                NonEmpty((node as CGameCtnBlockInfoClipHorizontal)?.HorizontalClipGroupId));
+                NonEmpty((node as CGameCtnBlockInfoClipHorizontal)?.HorizontalClipGroupId), EdgeRows(node as CGameCtnBlockInfoClipHorizontal));
         }
+    }
+
+    // bit per mobil row with a prefab, only when there is a choice
+    private static int EdgeRows(CGameCtnBlockInfoClipHorizontal? clip)
+    {
+        var rows = ((CGameCtnBlockInfoVariant?)clip?.VariantBaseAir ?? clip?.VariantBaseGround)?.Mobils ?? [];
+        var mask = Enumerable.Range(0, Math.Min(rows.Length, 16)).Where(i => rows[i].Any(m => m.PrefabFidFile is not null)).Sum(i => 1 << i);
+        return (mask & (mask - 1)) != 0 ? mask : 0;
     }
 
     // GBX.NET's U03 is IsAntiClip

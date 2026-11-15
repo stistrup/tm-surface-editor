@@ -37,7 +37,7 @@ internal static class BlockParts
                 var prefab = IsVertical(clip) && VerticalMobil(node, column) is ({ } vertical, var position)
                     ? MobilPrefab(vertical, clipPath, position, exact: true)
                     : ((CGameCtnBlockInfoVariant?)node.VariantBaseAir ?? node.VariantBaseGround) is { } clipVariant
-                        ? MobilPrefab(clipVariant, clipPath) : null;
+                        ? MobilPrefab(clipVariant, clipPath, node is CGameCtnBlockInfoClipHorizontal ? column : 0) : null;
                 if (prefab is { } part)
                 {
                     if (bit % 6 == 5) { tops.Add((part, place * Matrix4x4.CreateTranslation(unitOrigin), main is null, Learned(bit, node))); continue; }

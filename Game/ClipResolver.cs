@@ -93,15 +93,38 @@ public sealed class ClipResolver(BlockCatalog shapes)
 
         public List<HashSet<int>> Shown()
         {
-            var shown = blocks.Select(_ => new HashSet<int>()).ToList();
+            var picks = new List<(Int3 Cell, Int3 Dir, SideAt At, ClipInfo Clip)>();
             foreach (var ((cell, dir), list) in sides)
             {
                 var facingAt = sides.GetValueOrDefault((cell + dir, Neg(dir))) ?? [];
                 foreach (var at in list)
                     foreach (var c in Picked(cell, dir, list, at, facingAt))
-                        shown[at.Block].Add(ClipKey.Of(at.Side.Bit, c.Index, c.Vertical ? ColumnAt(cell, dir, c.VerticalGroup, blocks[at.Block].Ground) : 0));
+                    {
+                        picks.Add((cell, dir, at, c));
+                        if (c.EdgeKey is { } key) edges.Add((cell, dir, key));
+                    }
             }
+            var shown = blocks.Select(_ => new HashSet<int>()).ToList();
+            foreach (var (cell, dir, at, c) in picks)
+                shown[at.Block].Add(ClipKey.Of(at.Side.Bit, c.Index,
+                    c.Vertical ? ColumnAt(cell, dir, c.VerticalGroup, blocks[at.Block].Ground) : c.EdgeKey is { } key ? EdgeRow(cell, dir, key, c.EdgeRows) : 0));
             return shown;
+        }
+
+        private readonly HashSet<(Int3 Cell, Int3 Dir, string Key)> edges = [];
+
+        // each end of a horizontal edge (checked on the baked clips of 50 maps): goes on straight, turns around
+        // the facing cell, turns around its own cell, or ends; a row the clip lacks ends there
+        private int EdgeRow(Int3 cell, Int3 dir, string key, int rows)
+        {
+            int Toward(Int3 e) => edges.Contains((cell + e, dir, key)) ? ClipInfo.Straight
+                : edges.Contains((cell + dir + e, Neg(e), key)) ? ClipInfo.Out
+                : edges.Contains((cell, e, key)) ? ClipInfo.In : ClipInfo.End;
+            var first = new Int3(-dir.Z, 0, dir.X);
+            var (a, b) = (Toward(first), Toward(Neg(first)));
+            bool Has(int x, int y) => (rows >> (x * 4 + y) & 1) != 0;
+            if (!Has(a, b)) (a, b) = Has(ClipInfo.End, b) ? (ClipInfo.End, b) : Has(a, ClipInfo.End) ? (a, ClipInfo.End) : (ClipInfo.End, ClipInfo.End);
+            return a * 4 + b;
         }
 
         // the free clips this side shows
