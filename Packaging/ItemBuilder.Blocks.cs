@@ -70,5 +70,5 @@ public sealed partial class ItemBuilder
 
     private bool HasThemeSurface(string itemPath)
         => (Gbx.ParseNode<CGameItemModel>(itemPath).EntityModel as CGameCommonItemEntityModel)?.StaticObject?.Mesh?.CustomMaterials is { } materials
-            && materials.Any(m => m.MaterialUserInst is { } u && ((u.MaterialName ?? "") + (u.Link ?? "")).Contains(Theme.Family));
+            && materials.Any(m => m.MaterialUserInst is { } u && (((u.MaterialName ?? "") + (u.Link ?? "")).Contains(Theme.Family) || Theme.DrivesLikeRoad(u.MaterialName ?? "")));
 }

@@ -48,6 +48,17 @@ internal static class MapOutput
         });
     }
 
+    // the map's placed items into the game's folder, to find in the editor; block bodies stay in the cache
+    public static void Publish(ConversionReport report)
+    {
+        Directory.CreateDirectory(Paths.Items);
+        foreach (var item in report.UsedItems)
+        {
+            var to = Path.Combine(Paths.Items, Path.GetFileName(item.FilePath));
+            if (!File.Exists(to) || File.GetLastWriteTimeUtc(to) != File.GetLastWriteTimeUtc(item.FilePath)) File.Copy(item.FilePath, to, true);
+        }
+    }
+
     public static void Save(Gbx<CGameCtnChallenge> gbx, string path)
     {
         gbx.Save(path);

@@ -40,6 +40,15 @@ public static class Paths
         if (!Directory.Exists(UserData) && Directory.Exists(OldUserData)) Directory.Move(OldUserData, UserData);
     }
 
+    // built items used to live in the game's folder: moved once, so they aren't built again
+    public static void MoveBuiltItemsToCache()
+    {
+        if (Directory.Exists(BuiltItems) || !Directory.Exists(Items)) return;
+        Directory.CreateDirectory(BuiltItems);
+        foreach (var file in Directory.EnumerateFiles(Items, "*.Item.gbx", new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive }))
+            File.Move(file, Path.Combine(BuiltItems, Path.GetFileName(file)));
+    }
+
     public static string LocalSettings { get; set; } = Path.Combine(UserData, "local.jsonc");
 
     // what a new local.jsonc starts from (in the app's data/)
@@ -123,6 +132,7 @@ public static class Paths
 
     public static bool IsOurs(string id) => id.StartsWith(ItemFolder + "\\") || id.StartsWith(OldItemFolder + "\\");
 
+    // the game's: where the importer writes, and the items maps place (not block bodies)
     public static string Items => Path.Combine(TrackmaniaUser, "Items", ItemFolder);
     // the importer's input only; it reads nothing outside Work
     public static string Work => Path.Combine(TrackmaniaUser, "Work", "Items", ItemFolder);
@@ -132,6 +142,8 @@ public static class Paths
         : UserData;
     public static string Pieces => Path.Combine(Cache, "Mesh");
     public static string Blocks => Path.Combine(Cache, "Blocks");
+    // every item we built; maps embed from here
+    public static string BuiltItems => Path.Combine(Cache, "Items");
     public static string Views => Path.Combine(Cache, "Views");
 
     // "blender" in local.jsonc, else the one on PATH

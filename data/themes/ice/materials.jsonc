@@ -1,6 +1,7 @@
 // Nadeo material -> NadeoImporter material, for the ice theme
 {
-  "RoadTech": "PlatformIce_PlatformTech",
+  // bordered roads: road ice (its texture fits between borders); skins keep the platform ice
+  "RoadTech": "RoadIce",
   "RoadDirt": "PlatformIce_PlatformTech",
   "PlatformTech": "PlatformIce_PlatformTech",
   "TrackBorders": "TrackBorders",
@@ -20,6 +21,8 @@
   // per block: "<block pattern>|<material>"
   // the black band where the tech road turns into the bump road; on ice both sides look alike
   "*ToRoadBump*|DecalMarks": "",
+  // curb paint on tech curves and chicanes; ice roads have none
+  "DecalCurbs": "",
   "GrassFence": "",
   "Water": "",
   "SeaFloor": "",
@@ -49,12 +52,14 @@
   "DecalPaintSponsor4x1NoColorizeB": "DecalPaintSponsor4x1B",
   "DecalPaintSponsor4x1NoColorizeC": "DecalPaintSponsor4x1C",
   "DecalPaintSponsor4x1NoColorizeD": "DecalPaintSponsor4x1D",
-  "RoadBump": "PlatformIce_PlatformTech",
+  "RoadBump": "RoadIce",
   "CollisionMetal": "Technics",
   // "item:" only applies to item copies
   "ItemInflatableTube": "PlatformIce_PlatformTech",
   "item:CollisionMetal": "PlatformIce_PlatformTech",
   // "skin:" only applies to skins
+  "skin:RoadTech": "PlatformIce_PlatformTech",
+  "skin:RoadBump": "PlatformIce_PlatformTech",
   "skin:Deco": "@skin",
   "skin:DecoHill": "@skin",
   "skin:DecoHill2": "@skin",

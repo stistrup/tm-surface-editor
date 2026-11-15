@@ -112,6 +112,7 @@ internal sealed class ConvertBatch
         MapOutput.Prepare(gbx.Node, map.Name, UidOf(gbx.Node.MapUid, map), choices.FakeAuthorTime, choices.MeAsAuthor);
         MapOutput.Embed(gbx.Node, report);
         MapOutput.Save(gbx, map.Target);
+        MapOutput.Publish(report);
         // pieces built while converting can fail too
         var itemFailures = items.Failures;
         var failures = itemFailures.Select(f => $"{f.Key}: {f.Value}").ToList();

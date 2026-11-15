@@ -92,8 +92,11 @@ public sealed class Theme
     public bool IsRoadMaterial(string material) => RoadMaterials.Contains(material) || DrivesAsTheme(material);
 
     [JsonIgnore]
-    private HashSet<string> RoadMaterials => roadMaterials ??= [.. Map(null).Where(kv => kv.Value == Road && !kv.Key.Contains(':') && !kv.Key.Contains('|')).Select(kv => kv.Key)];
+    private HashSet<string> RoadMaterials => roadMaterials ??= [.. Map(null).Where(kv => DrivesLikeRoad(kv.Value) && !kv.Key.Contains(':') && !kv.Key.Contains('|')).Select(kv => kv.Key)];
     private HashSet<string>? roadMaterials;
+
+    // the road itself or a library material on its surface (bordered roads: RoadIce)
+    public bool DrivesLikeRoad(string material) => material == Road || MaterialLib.Surface(material) is { } s && s == MaterialLib.Surface(Road);
 
     public bool DrivesAsTheme(string material) => MaterialLib.Surface(material) is { } s && Surfaces.Contains(s);
 

@@ -37,8 +37,8 @@ switch (args)
         return new ConvertCommand(dataDir).Watch(rest);
     case ["scan", .. var rest]:
         return ToolCommands.Scan(rest.Length > 0 ? rest : [Paths.Maps], Path.Combine(dataDir, "known-blocks.txt"));
-    case ["make-item", var block]:
-        return new ItemBuilder(dataDir).BuildOne(block) is { } error ? CliArgs.Fail(error) : 0;
+    case ["make-item", var block, .. var rest] when rest is [] or ["--no-clips"]:
+        return new ItemBuilder(dataDir).BuildOne(block, clips: rest is []) is { } error ? CliArgs.Fail(error) : 0;
     case ["show", .. var rest] when rest.Length > 0:
         return inspect.Show(rest);
     case ["view", .. var rest] when rest.Length > 0:
@@ -70,8 +70,8 @@ switch (args)
                   Blocks and items one map has and the other hasn't (or their order); --dups lists blocks sharing name and cell.
               scan [folder]...
                   Add block names from maps to data/known-blocks.txt (native ice blocks are used once seen there or extracted).
-              make-item <BlockName>
-                  Build one ice item now (convert builds them on demand anyway).
+              make-item <BlockName> [--no-clips]
+                  Build one ice item now (convert builds them on demand anyway); --no-clips: without its free clips, as joined on every side.
               show <item | BlockName | pattern*>... [-o <out dir>]
                   Render built items as a collage (four corners, top, underside, collision, materials) to PNG.
               view <map.Gbx> [-o <out dir>] [--no-render]

@@ -5,6 +5,9 @@ namespace TmSurfaceEditor;
 // texture layouts: platform tiles, plain cover, ice streaks along roads
 internal static class RoadLayout
 {
+    private const string LinedRoad = "RoadIce";
+    private const float LinedRoadWidth = 0.8f * 32;
+
     public static float[] PlatformUv(float[] positions)
     {
         var uv = new float[positions.Length / 3 * 2];
@@ -38,13 +41,17 @@ internal static class RoadLayout
         var edges = Edges(roadLaid);
         var real = Openings(edges).Where(o => o.Width > 4).ToList();
         if (LayoutFor(real.Where(o => o.OnX).ToList(), real.Where(o => !o.OnX).ToList(), edges) is not { } layout) return;
+        // RoadIce's lined road is v 0.1..0.9 between dark edge bands: the road's own width fills it
+        var lined = LinedRoadWidth / real.Average(o => o.Width);
         for (int i = 0; i < pieces.Count; i++)
         {
             if (!roadLaid.Contains(pieces[i])) continue;
             var pos = pieces[i].Positions;
+            var across = pieces[i].Material == LinedRoad ? lined : 1;
             var uv = new float[pos.Length / 3 * 2];
             for (int v = 0; v < uv.Length / 2; v++)
-                (uv[2 * v], uv[2 * v + 1]) = layout(new Vector3(pos[3 * v], pos[3 * v + 1], pos[3 * v + 2])) is var t ? alongV ? (t.Y, t.X) : (t.X, t.Y) : default;
+                (uv[2 * v], uv[2 * v + 1]) = layout(new Vector3(pos[3 * v], pos[3 * v + 1], pos[3 * v + 2])) is var t
+                    ? (t with { Y = 0.5f + (t.Y - 0.5f) * across }) is var f && alongV ? (f.Y, f.X) : (f.X, f.Y) : default;
             pieces[i] = pieces[i] with { Uv0 = uv };
         }
     }

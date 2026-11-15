@@ -51,7 +51,7 @@ internal static class Lightmaps
     // terrain-only item: lightmap UVs back to the exported projection, as terrain shaders read them
     public static void BackToProjection(string itemName)
     {
-        var path = Path.Combine(Paths.Items, itemName + ".Item.gbx");
+        var path = Path.Combine(Paths.BuiltItems, itemName + ".Item.gbx");
         var gbx = Gbx.Parse<CGameItemModel>(path);
         var mesh = ((CGameCommonItemEntityModel)gbx.Node.EntityModel!).StaticObject!.Mesh!;
         ToNative(mesh, Jsonc.Load<List<MeshPiece>>(Path.Combine(Paths.Pieces, itemName + ".pieces.json")), itemName);

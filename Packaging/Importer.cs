@@ -40,7 +40,9 @@ internal static class Importer
 
         if (RunImporter($"Items\\{Paths.ItemFolder}\\{name}.Item.xml") is { } importError) return importError;
 
-        var itemPath = Path.Combine(Paths.Items, name + ".Item.gbx");
+        var itemPath = Path.Combine(Paths.BuiltItems, name + ".Item.gbx");
+        Directory.CreateDirectory(Paths.BuiltItems);
+        File.Move(Path.Combine(Paths.Items, name + ".Item.gbx"), itemPath, true);
         var collision = Jsonc.Load<List<FbxObject>>(Path.Combine(meshDir, name + ".objects.json"))
             .Where(o => !o.Name.StartsWith("_notcollidable_") && !o.Name.StartsWith("_trigger_"))
             .Select(o => (o.Name, o.Name.StartsWith("_notvisible_pad") ? $"{theme.PadSurface}:{Pads.PadGameplay(o.Name)}" : physics[o.Material], o.Triangles)).ToList();

@@ -33,7 +33,7 @@ internal static class SurfaceShaping
     }
 
     private static HashSet<Vec3[]> SurfaceStreams(CPlugSolid2Model mesh) => (mesh.ShadedGeoms ?? [])
-        .Where(g => mesh.CustomMaterials?[g.MaterialIndex].MaterialUserInst?.Link?.Contains("PlatformIce") == true)
+        .Where(g => mesh.CustomMaterials?[g.MaterialIndex].MaterialUserInst?.Link is { } link && (link.Contains("PlatformIce") || link.EndsWith("RoadIce")))
         .Select(g => mesh.Visuals?[g.VisualIndex]).OfType<CPlugVisualIndexedTriangles>()
         .Select(v => v.VertexStreams?.FirstOrDefault()?.Positions).OfType<Vec3[]>().ToHashSet();
 

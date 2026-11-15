@@ -16,6 +16,7 @@ public sealed partial class ItemBuilder
     {
         this.dataDir = dataDir;
         stamps = new ItemStamps(dataDir);
+        Paths.MoveBuiltItemsToCache();
         themeOf = new(() => Theme.Load(dataDir));
     }
 
@@ -153,12 +154,12 @@ public sealed partial class ItemBuilder
     }
 
     // one item now, with its free clips
-    public string? BuildOne(string block)
+    public string? BuildOne(string block, bool clips = true)
     {
-        var clips = new BlockCatalog(Paths.ExtractedStadium).ClipSides(block, false, 0)
+        var free = !clips ? [] : new BlockCatalog(Paths.ExtractedStadium).ClipSides(block, false, 0)
             .SelectMany(s => s.Clips.Where(c => !c.Vertical && !c.Anti && c.Type.StartsWith("FreeClip")).Select(c => ClipKey.Of(s.Bit, c.Index)))
             .ToHashSet();
-        return Build(new ItemRequest(block, false, 0, 0, clips, ItemKind.None, default, null, new ItemStyle()), null, Console.Out);
+        return Build(new ItemRequest(block, false, 0, 0, free, ItemKind.None, default, null, new ItemStyle()), null, Console.Out);
     }
 
     // false when nothing was planned
@@ -192,7 +193,7 @@ public sealed partial class ItemBuilder
         });
     }
 
-    private static string ItemPath(string name) => Path.Combine(Paths.Items, name + ".Item.gbx");
+    private static string ItemPath(string name) => Path.Combine(Paths.BuiltItems, name + ".Item.gbx");
 
     private static Ident ItemIdent(string name) => new($"{Paths.ItemFolder}\\{name}.Item.gbx", new Id(26), Paths.ItemAuthor);
 
@@ -213,7 +214,7 @@ public sealed partial class ItemBuilder
             planned[name] = (request, made);
             if (import) plannedImports.Add(name);
         }
-        lock (themeSurfaces) themeSurfaces[name] = made.Pieces.Any(p => p.Material.Contains(ThemeOf(request).Family));
+        lock (themeSurfaces) themeSurfaces[name] = made.Pieces.Any(p => p.Material.Contains(ThemeOf(request).Family) || ThemeOf(request).DrivesLikeRoad(p.Material));
         return null;
     }
 

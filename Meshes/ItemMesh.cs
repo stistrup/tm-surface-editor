@@ -41,9 +41,13 @@ internal sealed class ItemMesh(Theme theme, HashSet<string> missing)
         }
         lock (missing) missing.UnionWith(job.Catalog.Missing);
         if (WhyNothing(pieces, job) is { } error) return Stop(job, error);
-        if (job.Waypoint is { } waypoint) pieces.AddRange(Waypoints.Pieces(waypoint, pieces, theme.Road).ToList());
+        if (job.Waypoint is { } waypoint) pieces.AddRange(Waypoints.Pieces(waypoint, pieces, SocketMaterial(pieces)).ToList());
         return new ItemMeshResult(Tilted(pieces, job), job.Waypoint, job.Catalog);
     }
+
+    // a material the item draws: one only on collision fails the importer's lightmap
+    private string SocketMaterial(List<MeshPiece> pieces)
+        => pieces.FirstOrDefault(p => p.Visible && theme.DrivesLikeRoad(p.Material))?.Material ?? theme.Road;
 
     private static ItemMeshResult Stop(ItemJob job, string error) => new([], null, job.Catalog, error);
 
