@@ -305,6 +305,15 @@ export interface PreviewResult {
   // waiting for their items to be built (info.block / info.item)
   pendingBlocks: number[]
   pendingItems: number[]
+  size: SizeEstimate | null
+}
+
+// the saved map after shadows and compress; bytes -1: not built yet
+export interface SizeEstimate {
+  bytes: number
+  limit: number
+  unbuilt: number
+  pieces: { name: string; bytes: number; blocks: number[]; items: number[] }[]
 }
 
 export const fetchPreview = async (map: string, settings: MapSettings): Promise<PreviewResult> => {

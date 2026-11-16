@@ -33,6 +33,7 @@ internal static class ItemPlacer
         if (!block.IsGround && kind == ItemKind.None) placed.WaypointSpecialProperty = block.WaypointSpecialProperty;
         placed.Color = block.Color;
         run.Report.UsedItems.Add(item);
+        run.PlacedFor.Add((block, item.FilePath));
         return true;
     }
 }

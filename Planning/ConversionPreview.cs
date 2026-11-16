@@ -64,6 +64,7 @@ internal sealed partial class ConversionPreview(string dataDir)
         // waiting for their items to be built, by index in the map's own order
         public List<int> PendingBlocks { get; init; } = [];
         public List<int> PendingItems { get; init; } = [];
+        public MapSize? Size { get; init; }
     }
 
     // the pieces previews needed and nobody had built, built in the background
@@ -329,6 +330,7 @@ internal sealed partial class ConversionPreview(string dataDir)
                     PendingBlocks = [.. before.Blocks.Index().Where(b => run.Waiting.TryGetValue(b.Item, out var file) && run.Items.Unbuilt(file)
                         || run.Customs.TryGetValue(b.Item, out var c) && run.Items.Unbuilt(c.ItemPath)).Select(b => b.Index)],
                     PendingItems = [.. before.Items.Index().Where(o => run.WaitingItems.TryGetValue(o.Item.Item, out var file) && run.Items.Unbuilt(file)).Select(o => o.Index)],
+                    Size = MapSize.Of(mapPath, run, blockOrigin, itemOrigin),
                 };
             return (result, scene);
         }

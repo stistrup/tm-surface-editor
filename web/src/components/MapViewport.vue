@@ -5,6 +5,7 @@ import { MapScene } from '../viewer/MapScene'
 import { previewDraw, waitingDraw } from '../viewer/previewDraw'
 import ConvertMenu from './ConvertMenu.vue'
 import DocumentActions from './DocumentActions.vue'
+import MapSize from './MapSize.vue'
 import PreviewBar from './PreviewBar.vue'
 import ConvertDialog from './ConvertDialog.vue'
 import InspectPanel from './InspectPanel.vue'
@@ -142,6 +143,7 @@ onBeforeUnmount(() => {
       </div>
       <div v-if="store.currentMap" :class="$style.titleBar">
         <button type="button" :class="$style.mapTitle" :title="store.currentMap.path" @click="store.revealMap()">{{ store.currentMap.name }}</button>
+        <MapSize />
         <DocumentActions />
       </div>
       <div v-if="store.scene" :class="$style.topRight">

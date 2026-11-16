@@ -44,6 +44,8 @@ internal sealed class ConversionRun
     // planning: pieces whose items weren't built yet, with the item file (custom blocks say so themselves)
     public Dictionary<CGameCtnBlock, string> Waiting { get; } = new(ReferenceEqualityComparer.Instance);
     public Dictionary<CGameCtnAnchoredObject, string> WaitingItems { get; } = new(ReferenceEqualityComparer.Instance);
+    // embedded item files and the original block or item each was placed for
+    public List<(object Piece, string File)> PlacedFor { get; } = [];
     public Dictionary<CGameCtnBlock, (string Archetype, IReadOnlySet<int> Baked, bool Lift)> BuiltAs { get; } = new(ReferenceEqualityComparer.Instance);
     public HashSet<CGameCtnBlock> Stacked { get; } = new(ReferenceEqualityComparer.Instance);
     public Dictionary<(int X, int Z), (CGameCtnBlock Block, int Variant, int Mobil)>? CoveredGameplay { get; set; }

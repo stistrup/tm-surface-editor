@@ -78,6 +78,7 @@ internal static class ItemSwaps
         item.ItemModel = copy.Ident;
         if (run.Items.Unbuilt(copy.FilePath)) run.WaitingItems[item] = copy.FilePath;
         run.Report.UsedItems.Add(copy);
+        run.PlacedFor.Add((item, copy.FilePath));
         Bump(run.Report.ThemedItems, model.Id);
     }
 
