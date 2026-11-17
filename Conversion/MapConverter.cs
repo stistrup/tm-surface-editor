@@ -20,9 +20,8 @@ public sealed class MapConverter(HashSet<string> knownBlocks, ConversionRules da
         var rules = dataRules.For(map.MapName, own);
         rules.AmbiguousKeys = PieceKeys.Ambiguous(map);
         shapes.Environment = items.Environment = collection;
-        items.Style = new ItemStyle(rules.Options.SnowOnZoneSides, rules.Options.SnowOnGroundDeco, rules.SkinLift ?? ItemStyle.DefaultSkinLift, rules.SkinEdge ?? ItemStyle.DefaultSkinEdge);
+        items.Style = new ItemStyle(rules.Options.SnowOnGroundDeco, rules.SkinLift ?? ItemStyle.DefaultSkinLift, rules.SkinEdge ?? ItemStyle.DefaultSkinEdge);
         Flips.Run(map, shapes, rules);
-        CoverFill.ByKind(map, collection, shapes, rules);
         CoverFill.UnderPickedGates(map, collection, shapes, rules);
         var filled = rules.Options.FillEmptyWithSnow ? CoverFill.Run(map, collection, shapes, rules) : 0;
         var run = new ConversionRun(map, collection, rules, dataRules, knownBlocks, shapes, items, surfaceParents, flatTops);
@@ -35,7 +34,8 @@ public sealed class MapConverter(HashSet<string> knownBlocks, ConversionRules da
         if (rules.Options.RampToSkins) RampPass.Run(run);
 
         // these read the native names
-        var snow = new CoverSurfaces(map, run.Replaced.Concat(run.Customs.Keys), run.Renamed, run.Skinned, shapes, items.Theme, rules.Options.SnowOnZoneSides);
+        var snow = new CoverSurfaces(map, run.Replaced.Concat(run.Customs.Keys), run.Renamed, run.Skinned, shapes, items.Theme,
+            b => items.ZoneSidesOf(rules.PieceTheme(b), rules.PieceSides(b)));
         var trees = Trees.LostToBodies(run);
         PlaceNativesUnderBodies(run);
         RenameCustomBlocks(run);
@@ -46,7 +46,7 @@ public sealed class MapConverter(HashSet<string> knownBlocks, ConversionRules da
         // after the swaps: the stand-ins stand on terrain, not ice
         foreach (var (block, name, models) in trees) Trees.Plant(run, block, name, models);
         MatchPlatformColour(run);
-        if (rules.Options.RemoveForcedCameras) RemoveForcedCameras(run);
+        ForcedCameras.Disable(run);
         return run;
     }
 
@@ -101,13 +101,5 @@ public sealed class MapConverter(HashSet<string> knownBlocks, ConversionRules da
         var strays = platforms.Where(b => b.Color == DifficultyColor.Default).ToList();
         if (colours is not [var colour] || strays.Count == 0 || strays.Count * 2 >= platforms.Count) return;
         foreach (var b in strays) { b.Color = colour; Bump(run.Report.Recoloured, b.Name); }
-    }
-
-    private static void RemoveForcedCameras(ConversionRun run)
-    {
-        if (run.Map.ClipGroupInGame?.Clips is not { } clips) return;
-        foreach (var c in clips) c.Clip.Tracks.RemoveAll(t => t.Blocks.Any(b => b is CGameCtnMediaBlockCameraGame));
-        foreach (var c in clips.Where(c => c.Clip.Tracks.Count == 0)) run.Report.CameraClipsRemoved.Add(c.Clip.Name ?? "(unnamed)");
-        clips.RemoveAll(c => c.Clip.Tracks.Count == 0);
     }
 }

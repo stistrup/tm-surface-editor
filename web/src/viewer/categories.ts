@@ -1,6 +1,6 @@
 import type { InstanceInfo } from '../api'
 
-export const categories = ['block', 'customBlock', 'iceItem', 'item', 'terrain', 'missing'] as const
+export const categories = ['block', 'customBlock', 'iceItem', 'item', 'terrain', 'camera', 'missing'] as const
 export type Category = (typeof categories)[number]
 
 export const categoryLabels: Record<Category, string> = {
@@ -9,12 +9,14 @@ export const categoryLabels: Record<Category, string> = {
   iceItem: 'Ice items',
   item: 'Items',
   terrain: 'Terrain',
+  camera: 'Forced cameras',
   missing: 'No mesh',
 }
 
 const terrainNames = /^(Dirt|Water|DecoLake|DecoTerrain|Land|Beach|Sea)/
 
 export const categoryOf = (info: InstanceInfo): Category => {
+  if (info.kind === 'camera') return 'camera'
   if (info.units || info.placeholder) {
     return info.units && terrainNames.test(info.name) ? 'terrain' : 'missing'
   }

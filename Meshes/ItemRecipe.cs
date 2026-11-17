@@ -32,7 +32,7 @@ public enum ItemKind
 }
 
 // per-map look of items; part of the item's name where it changes the mesh
-public sealed record ItemStyle(bool ZoneSides = false, bool TerrainCover = true, float SkinLift = ItemStyle.DefaultSkinLift, float SkinEdge = ItemStyle.DefaultSkinEdge)
+public sealed record ItemStyle(bool TerrainCover = true, float SkinLift = ItemStyle.DefaultSkinLift, float SkinEdge = ItemStyle.DefaultSkinEdge)
 {
     public const float DefaultSkinLift = 0.02f;
 
@@ -48,7 +48,7 @@ internal sealed record ItemRecipe(ItemKind Kind, bool Top, bool TopsBody, bool B
     public bool Stacked => Kind == ItemKind.StackedBody;
     public bool TerrainFaces => Kind == ItemKind.TerrainFaces;
 
-    public static ItemRecipe For(ItemRequest r, BlockCatalog catalog)
+    public static ItemRecipe For(ItemRequest r, BlockCatalog catalog, Theme theme)
     {
         var kind = r.Kind;
         var topsBody = kind is ItemKind.TopsBody or ItemKind.TopOfTwinBody;
@@ -56,7 +56,7 @@ internal sealed record ItemRecipe(ItemKind Kind, bool Top, bool TopsBody, bool B
         var onTerrainBody = body && BlockNames.OnTerrainShape(r.Block);
         var whole = (kind == ItemKind.InTerrain || kind == ItemKind.None && r.Ground) && BlockNames.IsWholeOnGround(r.Block, catalog.Environment);
         var skin = !whole && !body && !topsBody && kind != ItemKind.Gated && (kind != ItemKind.None || IsSkin(catalog, r.Block, r.Ground));
-        return new ItemRecipe(kind, kind is ItemKind.Top or ItemKind.TopOfTwin, topsBody, body, skin, onTerrainBody, r.Style.ZoneSides && !onTerrainBody);
+        return new ItemRecipe(kind, kind is ItemKind.Top or ItemKind.TopOfTwin, topsBody, body, skin, onTerrainBody, theme.ZoneSides(r.Sides) && !onTerrainBody);
     }
 
     private static bool IsSkin(BlockCatalog catalog, string block, bool ground)
@@ -81,7 +81,7 @@ internal sealed record ItemRecipe(ItemKind Kind, bool Top, bool TopsBody, bool B
         [
             theme.ItemPrefix + r.Block + theme.NameTag,
             catalog.DefinedIn(r.Block) is { } env ? "_" + env : "",
-            KindSuffix(r, catalog),
+            KindSuffix(r, catalog, theme.ZoneSides(r.Sides)),
             !r.Style.TerrainCover && OnTerrain(r.Block, r.Ground, r.Kind) ? "_bare" : "",
             TiltKey(r.Tilt),
             r.Variant == 0 && r.Mobil == 0 ? "" : $"_v{r.Variant}m{r.Mobil}",
@@ -101,9 +101,9 @@ internal sealed record ItemRecipe(ItemKind Kind, bool Top, bool TopsBody, bool B
         return lift + edge;
     }
 
-    private static string KindSuffix(ItemRequest r, BlockCatalog catalog)
+    private static string KindSuffix(ItemRequest r, BlockCatalog catalog, bool zoneSides)
     {
-        var (block, zoneSides) = (r.Block, r.Style.ZoneSides);
+        var block = r.Block;
         var plainSkin = zoneSides && !block.StartsWith("Deco") ? "_skinzs" : "_skin";
         return r.Kind switch
         {

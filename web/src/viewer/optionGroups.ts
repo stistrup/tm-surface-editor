@@ -28,10 +28,10 @@ export const optionGroups: OptionGroup[] = [
 ]
 
 // shown after the other checkboxes
-export const terrainOptions = ['fillEmptyWithSnow', 'snowOnWaterHills', 'snowOnCliffs']
+export const terrainOptions = ['fillEmptyWithSnow']
 
 export const grouped = new Set([...optionGroups.flatMap((group) => group.options), ...terrainOptions])
 
 // options that lay a cover material; only the theme's snow for now
-export const coverOptions = new Set(['snowOnZoneSides', ...terrainOptions])
+export const coverOptions = new Set(terrainOptions)
 export const coverMaterials = ['Snow']

@@ -30,6 +30,11 @@ public sealed class MapSettings(JsonObject json)
         }
         // 3: no switch meant the rules on; now it means targets only
         if (version < 4 && json["rules"] is null) json["rules"] = true;
+        // 4: zone sides follow the pick's sides; ground-level shores and cliffs are terrain groups
+        if (version < 5 && json["options"] is JsonObject options)
+            foreach (var name in new[] { "snowOnZoneSides", "snowOnWaterHills", "snowOnCliffs" }) options.Remove(name);
+        // 5: forced cameras are pieces ("Camera <clip index> <name>": "disable")
+        if (version < 6 && json["options"] is JsonObject old) old.Remove("removeForcedCameras");
         return json;
     }
 

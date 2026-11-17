@@ -1,6 +1,7 @@
 // group conversions: pieces by group (a tree; a piece belongs to the first leaf that matches it), each converted one way.
 // A method runs the rules with some options, or gives every piece one target (pick). Children take their parent's methods unless they list their own;
-// a toggle swaps the chosen method for another while ticked. match: preview kinds, waypoint types, a name pattern, trees (items the swap tables freeze)
+// a toggle swaps the chosen method for another while ticked. match: preview kinds, waypoint types, a name pattern, trees (items the swap tables freeze),
+// ground (terrain on the base ground, not on a terrace or raised lake)
 {
   "methods": {
     "custom": { "label": "Custom block", "options": { "customBlocks": true, "customWaypoints": true, "skinsOnly": false, "skinWaypoints": false } },
@@ -12,7 +13,8 @@
     "cover": { "label": "Ground cover", "pick": "snow" },
     "swap": { "label": "Native snow tree", "pick": "frozen" },
     "swapOnConverted": { "label": "Swapped on converted blocks", "options": { "convertTrees": true } },
-    "copy": { "label": "Copy", "options": {} }
+    "copy": { "label": "Copy", "options": {} },
+    "disable": { "label": "Disable", "pick": "disable" }
   },
   "groups": [
     { "id": "roads", "label": "Roads", "methods": ["custom", "skin"], "children": [
@@ -37,13 +39,20 @@
       { "id": "other", "label": "Other deco", "match": { "kinds": ["deco", "decononsnow"] } }
     ] },
     { "id": "terrain", "label": "Terrain", "methods": ["cover"], "children": [
-      { "id": "shores", "label": "Shores", "match": { "kinds": ["shore"] } },
-      { "id": "cliffs", "label": "Cliffs", "match": { "kinds": ["terrain"], "name": "Cliff" } },
+      { "id": "shores", "label": "Shores", "children": [
+        { "id": "ground", "label": "Ground level water hills", "match": { "kinds": ["shore"], "ground": true } },
+        { "id": "raised", "label": "Raised", "match": { "kinds": ["shore"] } }
+      ] },
+      { "id": "cliffs", "label": "Cliffs", "children": [
+        { "id": "ground", "label": "Ground level dirt cliffs", "match": { "kinds": ["terrain"], "name": "Cliff", "ground": true } },
+        { "id": "raised", "label": "Raised", "match": { "kinds": ["terrain"], "name": "Cliff" } }
+      ] },
       { "id": "hills", "label": "Hills", "match": { "kinds": ["terrain"], "name": "Hill" } },
       { "id": "flat", "label": "Flat", "match": { "kinds": ["terrain"] } }
     ] },
     { "id": "trees", "label": "Trees", "methods": ["swap"], "toggles": [{ "label": "Only on converted blocks", "from": "swap", "to": "swapOnConverted" }], "match": { "kinds": ["items"], "trees": true } },
     { "id": "items", "label": "Other items", "methods": ["copy"], "match": { "kinds": ["items"] } },
+    { "id": "cameras", "label": "Forced cameras", "methods": ["disable"], "match": { "kinds": ["camera"] } },
     { "id": "unsupported", "label": "Not supported", "methods": [], "match": { "unsupported": true } }
   ]
 }

@@ -28,6 +28,10 @@ export const previewDraw = (
       looks.push({ index, materials: view.materialNames(index).map(() => view.pendingMaterial), topsOnly: false })
       return
     }
+    if (decision?.outcome === 'disabled' && info?.kind === 'camera') {
+      looks.push({ index, materials: [view.cameraMaterial(String(info.label ?? ''), true)], topsOnly: false })
+      return
+    }
     if (decision?.outcome === 'removed') {
       looks.push({ index, materials: view.materialNames(index).map(() => view.ghostMaterial), topsOnly: false })
       return

@@ -4,7 +4,7 @@ using GBX.NET.Engines.Game;
 
 namespace TmSurfaceEditor;
 
-// terrain options: empty cells (the environment's default zone, not in the map) get the flat terrain block, unless that zone is water; shores and cliffs snow by kind
+// empty cells (the environment's default zone, not in the map) get the flat terrain block, unless that zone is water
 internal static class CoverFill
 {
     public static int Run(CGameCtnChallenge map, string collection, BlockCatalog shapes, ConversionRules rules)
@@ -43,16 +43,9 @@ internal static class CoverFill
 
     public static bool CanFill(string collection) => !DefaultZones.IsWater(DefaultZones.Of(collection)) && FlatBlock(collection) is not null;
 
-    // snowOnWaterHills / snowOnCliffs, ground level only: those terrain columns snow as if picked
-    public static void ByKind(CGameCtnChallenge map, string collection, BlockCatalog shapes, ConversionRules rules)
-    {
-        var (shores, cliffs) = (rules.Options.SnowOnWaterHills, rules.Options.SnowOnCliffs);
-        if (!shores && !cliffs) return;
-        var ground = GroundY(collection);
-        foreach (var b in map.GetBlocks())
-            if (!b.IsFree && shapes.IsTerrain(b.Name) && (shores && CoverRules.IsShore(b.Name) && b.Coord.Y < ground || cliffs && b.Name.Contains("Cliff") && b.Coord.Y <= ground))
-                rules.CoverCells.Add((b.Coord.X, b.Coord.Z));
-    }
+    // on the base ground, not a terrace or raised lake; shores sit a level lower, at the water
+    public static bool AtGroundLevel(CGameCtnBlock block, string collection)
+        => !block.IsFree && block.Coord.Y <= GroundY(collection) - (CoverRules.IsShore(block.Name) ? 1 : 0);
 
     // grid Y of the flat ground; ground-level water lies one below
     private static int GroundY(string collection) => 8 + (int)(Placement.EnvironmentDrop(collection) / 8);

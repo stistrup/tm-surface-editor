@@ -16,7 +16,7 @@ public sealed record SavedSettings(int Version, string Uid, DateTime Updated, Js
 public sealed partial class SettingsStore(string root)
 {
     // stored settings older than this are upgraded on read (MapSettings.Upgrade)
-    public const int Version = 4;
+    public const int Version = 6;
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 

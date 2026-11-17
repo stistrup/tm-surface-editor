@@ -11,7 +11,7 @@ namespace TmSurfaceEditor;
 internal static class SceneBundle
 {
     // bump when the output changes
-    private const int Format = 50;
+    private const int Format = 58;
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -67,7 +67,7 @@ internal static class SceneBundle
 
         return new Manifest(scene.Map, scene.Environment, DefaultZones.Of(scene.Environment), geometry.Length, notExtracted, materials, meshes,
             scene.Instances.Select(i => new ManifestInstance(meshIndex[i.Mesh], i.M, i.Info)).ToList(),
-            scene.Placeholders, scene.Boxes, scene.Skipped);
+            scene.Placeholders, scene.Boxes, scene.Cameras ?? [], scene.Skipped);
     }
 
     // one material's pieces merged. Layout at Offset: positions, normals, uvs (floats), indices (uint), then rgba (floats) when Colors
@@ -107,6 +107,7 @@ internal static class SceneBundle
         List<ManifestInstance> Instances,
         List<SceneInstance> Placeholders,
         List<SceneInstance> Boxes,
+        List<SceneInstance> Cameras,
         Dictionary<string, int> Skipped);
 
     private sealed record ManifestMaterial(string Name, string? Shader, List<ManifestTexture> Textures, List<string>? Tints);

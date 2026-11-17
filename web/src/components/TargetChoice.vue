@@ -26,13 +26,27 @@ watch(
 )
 
 const combo = (material: string, way: string | null) => `${material}|${way ?? ''}`
+// "keep" is the old spelling of no target
+const sameAs = (pick: string, now: string) => (pick === 'keep' ? '' : pick) === (now === 'keep' ? '' : now)
 const withOption = (base: string, option: string) => `${base}#${option}`
+
+// the selection one entry per key: a forced camera's trigger areas are one piece
+const distinct = computed(() => {
+  const seen = new Set<string>()
+  return store.selection.filter((index) => {
+    const key = preview.decisions?.[index]?.key
+    if (!key) return true
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+})
 
 // each selected piece: its key, its target now, and per material|way(#option) the pick that does it there
 const pieces = computed(() => {
   const result = preview.result
   if (!result) return []
-  return store.selection.flatMap((index) => {
+  return distinct.value.flatMap((index) => {
     const d = preview.decisions?.[index]
     if (!d?.kind) return []
     const can = new Map<string, string>()
@@ -41,9 +55,10 @@ const pieces = computed(() => {
       const at = c.option ? withOption(combo(c.material, c.way), c.option) : combo(c.material, c.way)
       if (!d.cannot?.includes(c.value) && !can.has(at)) can.set(at, c.value)
     }
-    // only "original" left: nothing to convert it to
-    if (![...can.keys()].some((at) => !at.startsWith('original|'))) return []
-    return [{ index, key: d.key, now: preview.picks[d.key] ?? '', can, sides: !!d.sides }]
+    const now = preview.picks[d.key] ?? ''
+    // only "original" left and already original: nothing to convert it to
+    if (![...can.keys()].some((at) => !at.startsWith('original|')) && sameAs('', now)) return []
+    return [{ index, key: d.key, now, can, sides: !!d.sides }]
   })
 })
 
@@ -54,14 +69,14 @@ const ticked = ref(new Set<string>())
 // null: the material's own
 const side = ref<string | null>(null)
 
-const count = (test: (combo: string) => boolean) => pieces.value.filter((p) => [...p.can.keys()].some(test)).length
+// pieces where the combo leads somewhere new: what a piece already is isn't offered
+const count = (test: (combo: string) => boolean) =>
+  pieces.value.filter((p) => [...p.can].some(([at, pick]) => test(at) && !sameAs(pick, p.now))).length
 
 const counted = (label: string, n: number) => (n < pieces.value.length ? `${label} (${n}/${pieces.value.length})` : label)
 
 const materials = computed(() =>
   Object.entries(words.value?.materials ?? {})
-    // "original" is no conversion: a reset to original is parked
-    .filter(([value]) => value !== 'original')
     .map(([value, w]) => ({ value, n: count((c) => c.startsWith(`${value}|`)), label: w.label }))
     .filter((m) => m.n > 0),
 )
@@ -115,7 +130,7 @@ const reached = computed(() => {
 })
 // some, not none and not all: the rest stay selected for another choice
 const partial = computed(() => reached.value.length > 0 && reached.value.length < pieces.value.length)
-const changes = computed(() => reached.value.some((p) => p.now !== p.pick))
+const changes = computed(() => reached.value.some((p) => !sameAs(p.pick, p.now)))
 
 // the choice survives a reload in this session; it starts over when the selection empties, or one piece outside it gets selected
 interface Kept {
@@ -202,7 +217,7 @@ const hideList = () => {
 const { enter, leave, keep } = useHoverFocus()
 watch(listOpen, (now) => now || leave())
 const listed = computed(() =>
-  store.selection.map((index) => {
+  distinct.value.map((index) => {
     const info = store.infos[index]
     return { index, name: info ? displayName(info) : `#${index}` }
   }),
@@ -222,7 +237,7 @@ const reach = computed(() => {
       return sides ? `${base}, ${words.value?.sides[sides]?.label.toLowerCase() ?? sides} sides` : base
     }
     const next = hit.get(piece.index)
-    return { ...piece, applies: next !== undefined, next: next === undefined ? null : label(next), same: next === pick }
+    return { ...piece, applies: next !== undefined, next: next === undefined ? null : label(next), same: next !== undefined && sameAs(next, pick) }
   })
   return [...rows.filter((r) => r.applies), ...rows.filter((r) => !r.applies)]
 })
@@ -261,11 +276,11 @@ const apply = () => {
   const done = reached.value
   const byPick = new Map<string, string[]>()
   for (const p of done) byPick.set(p.pick, [...(byPick.get(p.pick) ?? []), p.key])
-  const out = new Set(done.map((p) => p.index))
+  const out = new Set(done.map((p) => p.key))
   const deselect = partial.value
   history.change(() => {
     for (const [pick, keys] of byPick) preview.pick(keys, pick)
-    if (deselect) store.selection = store.selection.filter((i) => !out.has(i))
+    if (deselect) store.selection = store.selection.filter((i) => !out.has(preview.decisions?.[i]?.key ?? ''))
   })
 }
 </script>
@@ -276,10 +291,10 @@ const apply = () => {
     <p v-else-if="!preview.result" :class="$style.muted">Calculating preview…</p>
     <template v-else>
       <div :class="$style.headRow">
-        <h3 ref="heading" :class="$style.heading" @mouseenter="showList(500)" @mouseleave="hideList">{{ store.selection.length }} selected</h3>
+        <h3 ref="heading" :class="$style.heading" @mouseenter="showList(500)" @mouseleave="hideList">{{ listed.length }} selected</h3>
         <button type="button" :class="$style.deselect" @click="history.change(() => (store.selection = []))">Deselect all</button>
       </div>
-      <FloatingPanel v-model="listOpen" :anchor="heading" :title="`Selected: ${store.selection.length}`"
+      <FloatingPanel v-model="listOpen" :anchor="heading" :title="`Selected: ${listed.length}`"
         fit @enter="showList()" @leave="hideList">
         <li v-for="piece in listed" :key="piece.index" @click="keep(piece.index, false)">
           <span :class="$style.grow">{{ piece.name }}</span>

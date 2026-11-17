@@ -35,7 +35,7 @@ public sealed class ConversionRules
     public Dictionary<string, string> Pieces { get; } = [];
 
     // copy, sink: items, as their rules do
-    public static readonly string[] PieceChoices = ["keep", "custom", "item", "skin", "snow", "tops", "twin", "twincover", "table", "gate", "copy", "sink", "plain", "remove", "frozen", "flip", "snowflip"];
+    public static readonly string[] PieceChoices = ["keep", "custom", "item", "skin", "snow", "tops", "twin", "twincover", "table", "gate", "copy", "sink", "plain", "remove", "frozen", "flip", "snowflip", "disable"];
 
     // "rules": true, maps from before conversion targets: the rules decide every piece without a pick, the snow and skin areas count.
     // Off (the default): only pieces with a pick convert; map-wide options still run

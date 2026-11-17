@@ -8,7 +8,7 @@ namespace TmSurfaceEditor;
 internal static class BlockParts
 {
     public static List<(string Path, Matrix4x4 Transform)>? Of(ClipFit fit, string infoPath, CGameCtnBlockInfoVariant variant, int mobil, string pillarShapeDirs,
-        Func<int, int, External<CGameCtnBlockInfoClip>, bool, int?> show)
+        Func<int, int, External<CGameCtnBlockInfoClip>, bool, int?> show, Func<string, string?>? mainPrefabOf = null)
     {
         var parts = new List<(string, Matrix4x4)>();
         var walls = new List<(string Path, Matrix4x4 Transform)>();
@@ -18,7 +18,7 @@ internal static class BlockParts
         var ancestor = Gbx.ParseHeader(infoPath).RefTable?.AncestorLevel ?? 0;
         var blockName = Path.GetFileName(infoPath).Split('.')[0];
         // baked clips say how the game turns it
-        Matrix4x4? Learned(int bit, CGameCtnBlockInfoClip node) => ClipTurns.Learned(blockName, bit, node.Ident.Id) is { } k ? AroundUnitCenter(-k * MathF.PI / 2) : null;
+        Matrix4x4? Learned(int bit, CGameCtnBlockInfoClip node) => ClipTurns.Learned(blockName, bit, node.Ident.Id, mainPrefabOf) is { } k ? AroundUnitCenter(-k * MathF.PI / 2) : null;
         var rise = Vector2.Zero;
         if (main is null)
             foreach (var (unitOrigin, bit, clips, _, probe) in ClipSlots(variant))

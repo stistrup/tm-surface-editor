@@ -75,7 +75,7 @@ internal static class ReportWriter
         if (report.CameraClipsRemoved.Count > 0)
         {
             sb.AppendLine($"\n## Forced cameras removed ({report.CameraClipsRemoved.Count})\n");
-            sb.AppendLine("In-game MediaTracker clips that forced the camera (or only switched it back), taken out.\n");
+            sb.AppendLine("In-game MediaTracker clips picked to lose their forced camera change.\n");
             foreach (var name in report.CameraClipsRemoved) sb.AppendLine($"- {name}");
         }
     }

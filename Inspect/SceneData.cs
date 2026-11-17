@@ -9,7 +9,9 @@ public sealed record SceneData(
     List<SceneInstance> Boxes,
     List<SceneWaypoint> Waypoints,
     Dictionary<string, SceneMaterial> Materials,
-    Dictionary<string, int> Skipped);
+    Dictionary<string, int> Skipped,
+    // forced-camera triggers (ForcedCameras): M places the first cell, info "cells" the rest from there
+    List<SceneInstance>? Cameras = null);
 
 public sealed record ScenePiece(string Material, float[] Positions, float[]? Normals, float[]? Uv0, int[] Indices, float[]? Colors);
 

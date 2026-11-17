@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useHistoryStore } from '../stores/history'
+import { useMapStore } from '../stores/map'
 import { usePreviewStore } from '../stores/preview'
 import DropDown from './DropDown.vue'
 import { coverMaterials, coverOptions, grouped, optionGroups, terrainOptions, type OptionGroup } from '../viewer/optionGroups'
@@ -8,6 +9,11 @@ import { optionLabel } from '../viewer/outcomes'
 
 const preview = usePreviewStore()
 const history = useHistoryStore()
+const map = useMapStore()
+
+// a view switch, not a conversion option: only on maps that have them
+const hasCameras = computed(() => (map.scene?.manifest.cameras?.length ?? 0) > 0)
+const camerasShown = computed(() => !map.hidden.includes('camera'))
 
 const terrain = computed(() => preview.options.filter((o) => terrainOptions.includes(o.name)))
 const checkboxes = computed(() => [
@@ -28,6 +34,10 @@ const toggle = (name: string, event: Event) => history.change(() => preview.set(
 
 <template>
   <fieldset v-if="preview.options.length" :class="$style.options" >
+    <label v-if="hasCameras" :class="$style.option">
+      <input type="checkbox" :checked="camerasShown" @change="map.toggleCategory('camera')" />
+      <span>Show forced cameras</span>
+    </label>
     <div v-for="group in optionGroups" :key="group.title" :class="$style.choice">
       <span :class="$style.option">
         <span>{{ group.title }}</span>

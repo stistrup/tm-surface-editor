@@ -71,6 +71,12 @@ public sealed partial class BlockCatalog
 
     private readonly Dictionary<string, HashSet<string>> environmentBlocks = [];
 
+    public bool HasInfo(string blockName) => TryLoadBlock(blockName, out _);
+
+    // a game block the extract lacks (newer than it): where its info would be, relative to GameData, for the extract plugin to try
+    public IEnumerable<string> InfoCandidates(string blockName)
+        => blockName.Contains('\\') ? [] : new[] { "Classic", "Pillar" }.Select(kind => $"Stadium/GameCtnBlockInfo/GameCtnBlockInfo{kind}/{blockName}.EDClassic.Gbx");
+
     private bool TryLoadBlock(string blockName, out (CGameCtnBlockInfo Info, string Path, CGameCtnBlockInfoVariant Variant) block)
     {
         if (!blockCache.TryGetValue(blockName, out var cached))
@@ -95,8 +101,17 @@ public sealed partial class BlockCatalog
     public List<(string Path, Matrix4x4 Transform)>? FindPlacedBlockParts(string blockName, bool ground, int variantIndex, int mobil, IReadOnlySet<int> shownClips)
         => TryLoadBlock(blockName, out var block) && PickVariant(block.Info, ground, variantIndex) is { } variant
             ? BlockParts.Of(fit, block.Path, variant, mobil, block.Info.PillarShapeMultiDir.ToString(), (bit, index, _, _) =>
-                Enumerable.Range(0, 16).Cast<int?>().FirstOrDefault(column => shownClips.Contains(ClipKey.Of(bit, index, column!.Value))))
+                Enumerable.Range(0, 16).Cast<int?>().FirstOrDefault(column => shownClips.Contains(ClipKey.Of(bit, index, column!.Value))), MainPrefabOf)
             : null;
+
+    // the base variant's prefab: blocks sharing it are one shape (clip turns carry over)
+    public string? MainPrefabOf(string blockName)
+    {
+        if (mainPrefabs.TryGetValue(blockName, out var known)) return known;
+        return mainPrefabs[blockName] = TryLoadBlock(blockName, out var block) && BlockParts.MobilPrefab(block.Variant, block.Path) is { } main ? main.Path : null;
+    }
+
+    private readonly Dictionary<string, string?> mainPrefabs = [];
 
     // a block placed as this variant on another archetype: the archetype's own when it has it, else its first (the clipless stand-in has one)
     public int VariantOn(string archetype, bool ground, int variant)

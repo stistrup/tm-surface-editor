@@ -36,6 +36,11 @@ public sealed partial class ItemBuilder
     // null: the theme's own
     private readonly ThreadLocal<string?> sidesOf = new();
 
+    // open-zone sides (Deco ground on non-Deco blocks) go with the sides: kept only where those stay native
+    public bool ZoneSides => Theme.ZoneSides(sidesOf.Value);
+
+    public bool ZoneSidesOf(string? theme, string? sides) => Theme.Load(dataDir, theme ?? Theme.DefaultName).ZoneSides(sides);
+
     private sealed class Restore(Action undo) : IDisposable
     {
         public void Dispose() => undo();

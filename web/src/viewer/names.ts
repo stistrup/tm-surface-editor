@@ -35,7 +35,7 @@ const colourNames = ['Default', 'White', 'Green', 'Blue', 'Red', 'Black']
 const order = Object.keys(labels)
 // keys without a label go last
 const rank = (key: string) => (order.includes(key) ? order.indexOf(key) : order.length)
-const hiddenKeys = new Set(['placeholder', 'cell', 'position', 'direction', 'units', 'block', 'item'])
+const hiddenKeys = new Set(['placeholder', 'cell', 'position', 'direction', 'units', 'block', 'item', 'camera', 'cells', 'cellSize'])
 
 export const infoRows = (info: InstanceInfo): { key: string; label: string; value: string; hint?: string }[] => {
   return Object.entries(info)

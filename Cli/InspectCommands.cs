@@ -90,6 +90,7 @@ internal sealed class InspectCommands(string dataDir)
         var totals = new Dictionary<(string Kind, string What), int>();
         var details = new List<(string Map, string What, ClipCheck.Clip Clip)>();
         int edges = 0, edgesWrong = 0;
+        var free = new int[5];
         foreach (var path in ExpandMaps(rest))
         {
             var result = ClipCheck.Compare(Gbx.ParseNode<CGameCtnChallenge>(path), shapes);
@@ -98,12 +99,18 @@ internal sealed class InspectCommands(string dataDir)
             foreach (var c in result.OursOnly) { totals[(c.Kind, "ours")] = totals.GetValueOrDefault((c.Kind, "ours")) + 1; details.Add((path, "we show", c)); }
             Console.WriteLine($"{Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(path)),-30} game shows, we hide {result.GameOnly.Count,5} | we show, game hides {result.OursOnly.Count,5} | edge rows wrong {result.EdgeRowWrong.Count,3}/{result.Edges}");
             edges += result.Edges;
+            var f = result.Free;
+            foreach (var (k, n) in new[] { f.Baked, f.GameOnly, f.OursOnly, f.DrawnGameOnly, f.DrawnOursOnly }.Index()) free[k] += n;
+            if (f.GameOnly + f.OursOnly > 0)
+                Console.WriteLine($"{"",-30} free: baked {f.Baked}, game shows, we hide {f.GameOnly} | we show, game hides {f.OursOnly} (all drawn: {f.DrawnGameOnly} | {f.DrawnOursOnly})");
+            if (verbose == "free") foreach (var d in f.Details) Console.WriteLine($"  {d}");
             foreach (var c in result.EdgeRowWrong) { edgesWrong++; if (verbose == "edge") details.Add((path, c.Kind, c)); }
         }
         Console.WriteLine();
         foreach (var kind in ClipCheck.Kinds)
             Console.WriteLine($"{kind,-9} baked {totals.GetValueOrDefault((kind, "baked")),6} | game shows, we hide {totals.GetValueOrDefault((kind, "game")),5} | we show, game hides {totals.GetValueOrDefault((kind, "ours")),5}");
         Console.WriteLine($"edge rows: {edges - edgesWrong} of {edges} as the game");
+        Console.WriteLine($"free     baked {free[0],6} | game shows, we hide {free[1],5} | we show, game hides {free[2],5} | all drawn: {free[3]} | {free[4]}");
         if (verbose == "edge")
             foreach (var (map, what, c) in details)
                 Console.WriteLine($"  {Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(map))} {c.Name} {c.Cell} on {c.Block} {c.BlockCoord}: {what}");

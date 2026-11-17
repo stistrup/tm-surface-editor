@@ -7,6 +7,7 @@ import {
   InstancedMesh,
   Matrix4,
   Mesh,
+  type MeshBasicMaterial,
   MOUSE,
   PerspectiveCamera,
   Plane,
@@ -21,6 +22,7 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { InstanceInfo, SceneManifest, SceneMaterial } from '../api'
 import { baseGround, CELL } from './baseGround'
+import { triggerGeometry, triggerMaterial } from './cameraTriggers'
 import { categoryOf, type Category } from './categories'
 import { Looks, type LookChange } from './looks'
 import { flatMaterial, groundHeight, SceneMaterials } from './materials'
@@ -176,6 +178,11 @@ export class MapScene {
       }
       this.place(`box:${box.mesh}|${key}`, [boxes.get(key)!], [boxMaterial], box.m, box.info)
     }
+    // a key per area: pieces sharing a key share the first one's geometry
+    for (const [area, camera] of (manifest.cameras ?? []).entries()) {
+      const material = this.cameraMaterial(String(camera.info.label ?? ''), false)
+      this.place(`camera:${area}`, [this.own(triggerGeometry(camera.info))], [material], camera.m, camera.info)
+    }
 
     this.buildInstances()
     this.baseZone = manifest.baseZone
@@ -234,6 +241,20 @@ export class MapScene {
     this.scheduleCut()
     this.invalidate()
   }
+
+  // a forced camera's look by its label: bright, or grey once disabled
+  cameraMaterial(label: string, disabled: boolean): Material {
+    const key = `${label}|${disabled}`
+    let material = this.cameraMaterials.get(key)
+    if (!material) {
+      material = triggerMaterial(label, disabled)
+      this.cameraMaterials.set(key, material)
+      this.ownMaterials.push(material)
+    }
+    return material
+  }
+
+  private readonly cameraMaterials = new Map<string, MeshBasicMaterial>()
 
   materialNames(index: number): (string | null)[] {
     return this.placed[index]?.materials.map((material) => this.materials?.nameOf(material) ?? null) ?? []
@@ -380,6 +401,8 @@ export class MapScene {
     this.layer?.dispose()
     for (const geometry of this.geometries) geometry.dispose()
     for (const material of this.ownMaterials) material.dispose()
+    for (const material of this.cameraMaterials.values()) material.map?.dispose()
+    this.cameraMaterials.clear()
     this.hoverMaterial.dispose()
     this.selectMaterial.dispose()
     this.pendingMaterial.dispose()

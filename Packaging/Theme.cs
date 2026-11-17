@@ -77,6 +77,8 @@ public sealed class Theme
 
     public SideChoice SidesOf(string? sides) => SideChoice.Of(DataDir, sides ?? Sides);
 
+    public bool ZoneSides(string? sides) => SidesOf(sides).Sides != "native";
+
     // a fresh copy each time; "item:" entries only on item copies, "top:" only on top skins; "@<role>" by the sides
     public Dictionary<string, string> Map(string? prefix, string? sides = null)
     {
@@ -106,7 +108,7 @@ public sealed class Theme
     // a library material on a surface the theme leaves alone
     public bool KeepsOwnSurface(string material) => MaterialLib.Surface(material) is { } s && !Replaces.Contains(s);
 
-    // Deco only on deco blocks (or with snowOnZoneSides)
+    // Deco only on deco blocks, or with zone sides (ZoneSides)
     public bool SkinCovers(string block, string material, bool zoneSides = false)
         => material.StartsWith("Deco") && !(zoneSides && MaterialLib.Surface(material) is { } deco && SkinsOver(deco))
             ? block.StartsWith("Deco")

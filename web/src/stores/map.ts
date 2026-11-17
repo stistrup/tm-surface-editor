@@ -56,9 +56,50 @@ export const useMapStore = defineStore('map', () => {
     })
     return cells
   })
+  // free gates: cell centre and axes from the placement (a 180° turned copy still lines up)
+  const freeGates = computed(() => {
+    const instances = scene.value?.manifest.instances ?? []
+    return instances.flatMap(({ info, m }, i) => {
+      if (info.kind !== 'block' || !info.name.startsWith('GateExpandable') || !Array.isArray(info.position)) return []
+      const axis = (row: number) => [m[row * 4], m[row * 4 + 1], m[row * 4 + 2]]
+      const [x, y, z, t] = [axis(0), axis(1), axis(2), axis(3)]
+      const centre = t.map((v, k) => v + 16 * x[k] + 4 * y[k] + 16 * z[k])
+      return [{ index: i, name: info.name, centre, x, y, z }]
+    })
+  })
+  type FreeGate = (typeof freeGates.value)[number]
+  const dot = (a: number[], b: number[]) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+  const touching = (a: FreeGate, b: FreeGate) => {
+    if (a.name !== b.name || Math.abs(dot(a.x, b.x)) < 0.999 || dot(a.y, b.y) < 0.999) return false
+    const d = b.centre.map((v, k) => v - a.centre[k])
+    const steps = [Math.abs(dot(d, a.x)) / 32, Math.abs(dot(d, a.y)) / 8, Math.abs(dot(d, a.z)) / 32]
+    return steps.filter((s) => Math.abs(s - 1) < 0.01).length === 1 && steps.filter((s) => s < 0.01).length === 2
+  }
+  const wholeFreeGate = (index: number): number[] | null => {
+    const gates = freeGates.value
+    const start = gates.find((g) => g.index === index)
+    if (!start) return null
+    const found = new Set([start])
+    const queue = [start]
+    for (let gate; (gate = queue.pop()); )
+      for (const other of gates)
+        if (!found.has(other) && touching(gate, other)) {
+          found.add(other)
+          queue.push(other)
+        }
+    return [...found].map((g) => g.index).filter((i) => i !== index).concat(index)
+  }
+
   // the piece with the rest of its object, the piece itself last
   const whole = (index: number): number[] => {
     const info = infos.value[index]
+    // a forced camera's trigger areas
+    if (info?.kind === 'camera') {
+      const areas = infos.value.flatMap((other, i) => (i !== index && other.kind === 'camera' && other.camera === info.camera ? [i] : []))
+      return [...areas, index]
+    }
+    const free = wholeFreeGate(index)
+    if (free) return free
     if (info?.kind !== 'block' || !Array.isArray(info.cell) || !gateCells.value.has(cellKey(info))) return [index]
     const found = new Set([index])
     const queue = [info.cell as number[]]
@@ -131,11 +172,11 @@ export const useMapStore = defineStore('map', () => {
   const forgetMap = () => writeText(MAP_KEY, null)
   const rememberedMap = () => readText(MAP_KEY)
 
-  // instances, then placeholders, then boxes: the order MapScene numbers them in
+  // instances, placeholders, boxes, then cameras: the order MapScene numbers them in
   const infos = computed<InstanceInfo[]>(() => {
     const manifest = scene.value?.manifest
     if (!manifest) return []
-    return [...manifest.instances, ...manifest.placeholders, ...manifest.boxes].map((i) => i.info)
+    return [...manifest.instances, ...manifest.placeholders, ...manifest.boxes, ...(manifest.cameras ?? [])].map((i) => i.info)
   })
 
   const categoryCounts = computed(() => {
@@ -222,6 +263,7 @@ export const useMapStore = defineStore('map', () => {
     revealed,
     revealMap,
     infos,
+    whole,
     categoryCounts,
     view,
     textureLoads,

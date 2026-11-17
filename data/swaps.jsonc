@@ -8,7 +8,7 @@
   ],
 
   // blocks and items never converted, whatever the options or picks; * = any text
-  "notSupported": ["Podium", "Stand*", "TechnicsScreen*", "Flag16m", "ShowSpeakers"],
+  "notSupported": ["Podium", "Stand*", "TechnicsScreen*", "Flag16m", "ShowSpeakers", "StructureDeadend"],
 
   // ice blocks an environment lacks
   "unavailableIn": {

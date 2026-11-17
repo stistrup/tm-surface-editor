@@ -14,7 +14,7 @@ internal sealed record ItemJob(Theme Theme, ItemRequest Request, ItemRecipe Reci
     public static ItemJob For(ItemRequest r, Theme theme)
     {
         var catalog = new BlockCatalog(Paths.ExtractedStadium) { Environment = r.Environment };
-        var recipe = ItemRecipe.For(r, catalog);
+        var recipe = ItemRecipe.For(r, catalog, theme);
         var materials = ItemMaterials.For(r, recipe, theme, catalog.Environment);
         var tilt = Matrix4x4.CreateFromYawPitchRoll(0, r.Tilt.X, r.Tilt.Y);
         var export = ItemExporters.For(r, recipe, catalog, materials.Map, theme, tilt);

@@ -30,7 +30,9 @@ public sealed class MapView(BlockCatalog shapes)
     private readonly Dictionary<string, string> skipReasons = [];
     private readonly Dictionary<CGameCtnBlock, int> blockIndex = new(ReferenceEqualityComparer.Instance);
 
-    public IReadOnlyCollection<string> Missing => materials.Missing.Concat(shapes.Missing).ToHashSet();
+    public IReadOnlyCollection<string> Missing => materials.Missing.Concat(shapes.Missing).Concat(missingInfos).ToHashSet();
+
+    private readonly HashSet<string> missingInfos = [];
 
     // an importer material as our items use it (no vista restyle)
     public SceneMaterial OwnMaterial(string name) => materials.Own(name);
@@ -49,8 +51,27 @@ public sealed class MapView(BlockCatalog shapes)
         AddItems(map);
         return new SceneData(map.MapName, map.Collection?.ToString(),
             meshes.Where(kv => kv.Value is { Count: > 0 }).ToDictionary(kv => kv.Key, kv => kv.Value!),
-            instances, placeholders, boxes, waypoints, materials.All, skipped);
+            instances, placeholders, boxes, waypoints, materials.All, skipped, Cameras(map));
     }
+
+    // one instance per touching area of a trigger; the page selects a camera's areas together
+    private static List<SceneInstance> Cameras(CGameCtnChallenge map)
+        => [.. ForcedCameras.Of(map).SelectMany(c => ForcedCameras.Areas(c.Cells).Select(area => (c, area))).Select(x =>
+        {
+            var (c, cells) = x;
+            var first = cells[0];
+            var corner = ForcedCameras.Corner(first, map.Collection?.ToString());
+            var info = new Dictionary<string, object>
+            {
+                ["kind"] = "camera",
+                ["camera"] = c.Index,
+                ["name"] = c.Name,
+                ["label"] = c.Label,
+                ["cells"] = cells.Select(p => new[] { p.X - first.X, p.Y - first.Y, p.Z - first.Z }).ToList(),
+                ["cellSize"] = new[] { ForcedCameras.Cell.X, ForcedCameras.Cell.Y, ForcedCameras.Cell.Z },
+            };
+            return new SceneInstance("camera", Flatten(Matrix4x4.CreateTranslation(corner)), info);
+        })];
 
     private sealed record GridBlock(CGameCtnBlock Block, ClipResolver.Placed Placed, int Mobil, Int3[] Cells);
 
@@ -59,12 +80,9 @@ public sealed class MapView(BlockCatalog shapes)
         // the map's own order, for the conversion preview
         blockIndex.Clear();
         foreach (var (i, b) in map.GetBlocks().Index()) blockIndex[b] = i;
-        var grid = new List<GridBlock>();
-        foreach (var block in map.GetBlocks())
-        {
-            if (block.IsFree) AddFree(block);
-            else grid.Add(OnGrid(block));
-        }
+        var free = map.GetBlocks().Where(b => b.IsFree).ToList();
+        foreach (var (block, clips) in free.Zip(FreeClipResolver.Shown(shapes, free))) AddFree(block, clips);
+        var grid = map.GetBlocks().Where(b => !b.IsFree).Select(OnGrid).ToList();
         var resolver = new ClipResolver(shapes);
         var asShown = resolver.OfAll(grid.Select(g => g.Block).ToList());
         for (int i = 0; i < grid.Count; i++)
@@ -92,13 +110,11 @@ public sealed class MapView(BlockCatalog shapes)
         }
     }
 
-    private void AddFree(CGameCtnBlock block)
+    private void AddFree(CGameCtnBlock block, HashSet<int> clips)
     {
-        var (p, r) = (block.AbsolutePositionInMap ?? default, block.YawPitchRoll ?? default);
-        var free = Matrix4x4.CreateFromYawPitchRoll(r.X, r.Y, r.Z) * Matrix4x4.CreateTranslation(p.X, p.Y, p.Z);
-        var all = BlockKinds.DrawnFreeClips(shapes, block);
         if (onlyBlocks?.Contains(block) != false)
-            Add(block, block.Name, block.IsGround, BlockFlags.VariantOf(block), BlockFlags.MobilOf(block), free, all, Info(block, p), null);
+            Add(block, block.Name, block.IsGround, BlockFlags.VariantOf(block), BlockFlags.MobilOf(block), FreeClipResolver.PlaceOf(block), clips,
+                Info(block, block.AbsolutePositionInMap ?? default), null);
     }
 
     // as the clip resolver sees it: a body-less pillar draws from the block above, a custom block clips as its archetype
@@ -187,7 +203,9 @@ public sealed class MapView(BlockCatalog shapes)
         if (meshes[key] is null)
         {
             // not extracted: box
-            Bump(skipped, $"block {meshName}: no mesh, drawn as a box");
+            var noInfo = !shapes.HasInfo(meshName);
+            if (noInfo) missingInfos.UnionWith(shapes.InfoCandidates(meshName));
+            Bump(skipped, $"block {meshName}: {(noInfo ? "not extracted" : "no mesh")}, drawn as a box");
             var units = shapes.Units(meshName, ground, variant) ?? [new Int3(0, 0, 0)];
             info["units"] = new[] { units.Max(u => u.X) + 1, units.Max(u => u.Y) + 1, units.Max(u => u.Z) + 1 };
             // why there's no mesh: a body-less block draws only the clips the resolver shows

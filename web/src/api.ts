@@ -63,6 +63,8 @@ export interface SceneManifest {
   instances: SceneInstance[]
   placeholders: SceneMarker[]
   boxes: SceneMarker[]
+  // forced-camera triggers: info.cells from the first cell, info.cellSize
+  cameras: SceneMarker[]
   skipped: Record<string, number>
 }
 
@@ -283,6 +285,8 @@ export interface PreviewResult {
   // keyed by the block / item index in the map's own order (info.block, info.item)
   blocks: Record<string, PreviewDecision>
   items: Record<string, PreviewDecision>
+  // keyed by the in-game clip index (info.camera)
+  cameras: Record<string, PreviewDecision>
   addedItems: number
   // data/themes/ice/materials.jsonc: native material (or "skin:"/"top:"/"item:" + name, or "<block pattern>|name") -> importer material, "" = left out, "native" = kept
   swaps: Record<string, string>

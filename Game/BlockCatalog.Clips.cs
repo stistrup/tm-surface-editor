@@ -56,7 +56,7 @@ public sealed partial class BlockCatalog
 
     // quarter turns of a shaped top/bottom clip on top of its block's direction: learned from maps, else the fitted mesh turn
     public int ShapedClipTurn(string blockName, bool ground, int variantIndex, int bit, ClipInfo clip)
-        => ClipTurns.Learned(blockName, bit, clip.Name)
+        => ClipTurns.Learned(blockName, bit, clip.Name, MainPrefabOf)
             ?? (ShapedClipTurns(blockName, ground, variantIndex).TryGetValue((bit, clip.Index), out var turn) ? ClipTurns.DirOf(turn) : 0);
 
     private readonly Dictionary<(string, bool, int), Dictionary<(int Bit, int Index), Matrix4x4>> shapedTurns = [];

@@ -7,7 +7,8 @@
     "snow": { "label": "Snow", "description": "" },
     "wood": { "label": "Wood", "description": "" },
     "plastic": { "label": "Plastic", "description": "" },
-    "remove": { "label": "Remove", "description": "Taken out of the map" }
+    "remove": { "label": "Remove", "description": "Taken out of the map" },
+    "disable": { "label": "Disabled", "description": "The camera change is taken out; the trigger stays in the map" }
   },
   // in this order; the first that works is the default
   "ways": {
@@ -44,6 +45,7 @@
     "flip": { "label": "Ice, flipped", "material": "ice", "way": "nativeflip" },
     "snowflip": { "label": "Snow cover, flipped", "material": "snow", "way": "coverflip" },
     "remove": { "label": "Remove", "material": "remove" },
+    "disable": { "label": "Disabled", "material": "disable" },
     "frozen": { "label": "Snow, native snow tree", "material": "snow", "way": "swap" },
     "copy": { "label": "Ice, item", "material": "ice", "way": "item" },
     "sink": { "label": "Sunk", "material": "original", "way": "sunk" },
@@ -71,6 +73,8 @@
     "specialground": { "label": "Special, on the ground", "picks": ["", "custom", "plain", "snow"] },
     "reactor": { "label": "Reactor", "picks": ["", "plain", "flip"] },
     "reactorground": { "label": "Reactor, on the ground", "picks": ["", "plain", "snow", "flip", "snowflip"] },
-    "items": { "label": "Items", "picks": ["", "frozen", "copy", "sink"] }
+    "items": { "label": "Items", "picks": ["", "frozen", "copy", "sink"] },
+    // in-game clips that force a camera change
+    "camera": { "label": "Forced cameras", "picks": ["", "disable"] }
   }
 }

@@ -235,12 +235,34 @@ export const usePreviewStore = defineStore('preview', () => {
       runTimer = setTimeout(() => {
         const json = JSON.stringify(working.value)
         if (json === asked && (loading.value || json === ranWith.value)) return
+        if (!loading.value && cameraOnly(json)) return
         asked = json
         void run()
       }, 250)
     },
     { deep: true },
   )
+
+  // a forced camera changes nothing else: its decision is set here, as ConversionPreview.CameraDecision does
+  const withoutCameras = (settings: MapSettings, keys: Set<string>) => {
+    const pieces = Object.fromEntries(Object.entries(settings.pieces ?? {}).filter(([key]) => !keys.has(key)))
+    const { pieces: _, ...rest } = settings
+    return JSON.stringify(Object.keys(pieces).length ? { ...rest, pieces } : rest)
+  }
+  const cameraOnly = (json: string) => {
+    const r = result.value
+    if (!r?.cameras || !ranWith.value) return false
+    const keys = new Set(Object.values(r.cameras).map((d) => d.key))
+    if (withoutCameras(JSON.parse(json), keys) !== withoutCameras(JSON.parse(ranWith.value), keys)) return false
+    const picks = (working.value.pieces ?? {}) as Record<string, string>
+    const cameras = Object.fromEntries(Object.entries(r.cameras).map(([index, d]) => {
+      const picked = picks[d.key] ?? null
+      return [index, { ...d, picked, outcome: picked === 'disable' ? 'disabled' : 'unchanged', rule: picked === 'disable' ? 'Picked' : null }]
+    }))
+    result.value = { ...r, cameras }
+    ranWith.value = json
+    return true
+  }
 
   // "" = back to the rules; the preview follows right away
   const pick = (keys: string[], choice: string) => {
@@ -258,7 +280,13 @@ export const usePreviewStore = defineStore('preview', () => {
     const r = result.value
     if (!r) return null
     return map.infos.map((info) =>
-      typeof info.block === 'number' ? r.blocks[info.block] : typeof info.item === 'number' ? r.items[info.item] : undefined,
+      typeof info.block === 'number'
+        ? r.blocks[info.block]
+        : typeof info.item === 'number'
+          ? r.items[info.item]
+          : typeof info.camera === 'number'
+            ? r.cameras?.[info.camera]
+            : undefined,
     )
   })
 

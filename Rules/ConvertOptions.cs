@@ -6,16 +6,12 @@ namespace TmSurfaceEditor;
 // the switches; these defaults are what a map without settings of its own converts with.
 // Category: map (a map-wide job), piece (how pieces convert: what presets set), look (the material's look). Description: the GUI's info text
 public sealed record ConvertOptions(
-    [property: Category("map"), Description("Forced camera changes are taken out of the in-game clips")]
-    bool RemoveForcedCameras = false,
     [property: Category("map"), Description("Engine-off blocks become reset blocks, engine-off gates are removed")]
     bool EngineOffToReset = false,
     [property: Category("piece"), Description("Slow-motion and reset pads become ice with a gate that keeps the effect")]
     bool EffectsToGate = false,
     [property: Category("map"), Description("Engine-off blocks become plain blocks, engine-off gates are removed; wins over engine-off to reset")]
     bool EngineOffToPlain = false,
-    [property: Category("look"), Description("Open-zone sides convert too, inside custom blocks and skins only; roads swapped to the game's own ice roads keep their grass")]
-    bool SnowOnZoneSides = false,
     [property: Category("piece"), Description("Deco platforms on or in the ground: native ice with a snow skin")]
     bool SnowOnGroundDeco = false,
     [property: Category("piece"), Description("Blocks that would become whole items become custom blocks instead")]
@@ -28,10 +24,6 @@ public sealed record ConvertOptions(
     bool ConvertScenery = false,
     [property: Category("map"), Description("Empty cells, the game's flat ground, get converted too")]
     bool FillEmptyWithSnow = false,
-    [property: Category("map"), Description("Shores (water hills) at ground level get converted above the water line; raised lakes stay")]
-    bool SnowOnWaterHills = false,
-    [property: Category("map"), Description("Cliffs standing on the ground get converted at their foot; cliffs on terraces stay")]
-    bool SnowOnCliffs = false,
     [property: Category("piece"), Description("Native blocks keep their place under an ice skin instead of becoming custom blocks: smaller maps, one ice look")]
     bool SkinsOnly = false,
     [property: Category("piece"), Description("Starts, checkpoints and finishes stay native under an ice skin; they are the largest custom blocks")]
@@ -43,19 +35,15 @@ public sealed record ConvertOptions(
 {
     public ConvertOptions With(string name, bool value) => name switch
     {
-        "removeForcedCameras" => this with { RemoveForcedCameras = value },
         "engineOffToReset" => this with { EngineOffToReset = value },
         "effectsToGate" => this with { EffectsToGate = value },
         "engineOffToPlain" => this with { EngineOffToPlain = value },
-        "snowOnZoneSides" => this with { SnowOnZoneSides = value },
         "snowOnGroundDeco" => this with { SnowOnGroundDeco = value },
         "customBlocks" => this with { CustomBlocks = value },
         "customWaypoints" => this with { CustomWaypoints = value },
         "convertTrees" => this with { ConvertTrees = value },
         "convertScenery" => this with { ConvertScenery = value },
         "fillEmptyWithSnow" => this with { FillEmptyWithSnow = value },
-        "snowOnWaterHills" => this with { SnowOnWaterHills = value },
-        "snowOnCliffs" => this with { SnowOnCliffs = value },
         "skinsOnly" => this with { SkinsOnly = value },
         "skinWaypoints" => this with { SkinWaypoints = value },
         "rampToSkins" => this with { RampToSkins = value },

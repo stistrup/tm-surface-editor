@@ -10,7 +10,12 @@ import GroupSelect from './GroupSelect.vue'
 const store = useMapStore()
 
 const info = computed(() => (store.selected === null ? null : store.infos[store.selected]))
-const single = computed(() => !!info.value && store.selection.length <= 1)
+// one object: a piece, or all of one forced camera's areas or one expandable gate
+const single = computed(() => {
+  if (!info.value || store.selected === null) return false
+  const object = new Set(store.whole(store.selected))
+  return store.selection.length <= object.size && store.selection.every((i) => object.has(i))
+})
 
 // instances come first in store.infos; boxes and cones have no pieces
 const materials = computed(() => {

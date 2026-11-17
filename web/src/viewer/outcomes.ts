@@ -16,10 +16,7 @@ export const outcomes: Record<string, { label: string; color: number | null }> =
 // where the name says less than the option does
 const optionLabels: Record<string, string> = {
   convertTrees: 'Convert trees on converted blocks',
-  fillEmptyWithSnow: 'Fill empty cells',
-  snowOnZoneSides: 'Open-zone sides',
-  snowOnWaterHills: 'Ground level water hills',
-  snowOnCliffs: 'Ground level dirt cliffs',
+  fillEmptyWithSnow: 'Convert empty cells',
 }
 
 // convertScenery -> Convert scenery

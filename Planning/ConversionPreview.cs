@@ -48,7 +48,7 @@ internal sealed partial class ConversionPreview(string dataDir)
         => ambiguous.GetValueOrDefault(block) is { } own ? own
             : block.IsFree && block.AbsolutePositionInMap is { } p ? $"{name} {Inv(p.X)}, {Inv(p.Y)}, {Inv(p.Z)}" : ConversionRules.KeepKey(name, block.Coord.X, block.Coord.Y, block.Coord.Z);
 
-    public sealed record Result(List<Option> Options, Dictionary<int, Decision> Blocks, Dictionary<int, Decision> Items, int AddedItems, long Milliseconds,
+    public sealed record Result(List<Option> Options, Dictionary<int, Decision> Blocks, Dictionary<int, Decision> Items, Dictionary<int, Decision> Cameras, int AddedItems, long Milliseconds,
         Dictionary<string, string> Swaps, Dictionary<string, Look> Looks, string AddedScene,
         // originals drawn for real in the added scene (or gone): hidden in the view
         List<int> HiddenBlocks, List<int> HiddenItems,
@@ -285,7 +285,9 @@ internal sealed partial class ConversionPreview(string dataDir)
         var rulesNow = dataRules!.For(map.MapName, own);
         var defaults = dataRules.For(map.MapName, new ConversionRules()).Options;
         var before = Before.Of(map);
+        var cameras = ForcedCameras.Of(map);
         var run = converter!.Run(map, own);
+        var cameraDecisions = cameras.ToDictionary(c => c.Index, c => CameraDecision(c, rulesNow, groups!));
 
         var blockDecisions = before.Blocks.Index().ToDictionary(b => b.Index, b => BlockDecision(run, before, b.Index, rulesNow, groups!) is var d ? d with { Cannot = CannotOf(run, b.Item, d.Kind) } : null!);
         var now = new HashSet<object>(map.AnchoredObjects ?? [], ReferenceEqualityComparer.Instance);
@@ -319,9 +321,9 @@ internal sealed partial class ConversionPreview(string dataDir)
             var addedCount = convertedItems.Count(o => !itemOrigin.ContainsKey(o));
             var sceneId = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes($"{key}|{builds}")))[..16];
             var scene = SceneBundle.InMemory(part);
-            var keys = before.Keys.Concat(before.PlainKeys).Concat(before.Items.Select(o => ItemKey(o.Id, o.Position))).Select(Normal).ToHashSet();
+            var keys = before.Keys.Concat(before.PlainKeys).Concat(before.Items.Select(o => ItemKey(o.Id, o.Position))).Concat(cameras.Select(c => c.Key)).Select(Normal).ToHashSet();
             var stale = rulesNow.Pieces.Keys.Where(k => !keys.Contains(k)).Order(StringComparer.Ordinal).ToList();
-            var result = new Result(OptionList(rulesNow.Options, defaults), blockDecisions, itemDecisions, addedCount, clock.ElapsedMilliseconds, themeLooks.Swaps, themeLooks.Looks,
+            var result = new Result(OptionList(rulesNow.Options, defaults), blockDecisions, itemDecisions, cameraDecisions, addedCount, clock.ElapsedMilliseconds, themeLooks.Swaps, themeLooks.Looks,
                 sceneId, hiddenBlocks.Order().ToList(), hiddenItems.Order().ToList(), builds, problems, stale)
                 {
                     Choices = picks!.Choices,
@@ -347,7 +349,7 @@ internal sealed partial class ConversionPreview(string dataDir)
         return d with
         {
             Kind = kind,
-            Group = groups.PathOf(kind, name, run.Shapes.Waypoint(name), tree: false),
+            Group = groups.PathOf(kind, name, run.Shapes.Waypoint(name), tree: false, ground: CoverFill.AtGroundLevel(before.Blocks[i], run.Collection)),
             Key = before.Keys[i],
             Sides = HasSides(run, name, before.Flags[i]),
             // a shared block picked by its cell's key before keys told them apart
@@ -379,6 +381,11 @@ internal sealed partial class ConversionPreview(string dataDir)
             Group = groups.PathOf("items", id, run.Shapes.ItemWaypoint(id), tree: ItemSwaps.CoverSwap(run, id) is not null),
         };
     }
+
+    private static Decision CameraDecision(ForcedCameras.Camera camera, ConversionRules rulesNow, GroupCatalog groups)
+        => rulesNow.Pieces.GetValueOrDefault(camera.Key) is var picked && (picked == "disable" ? new Decision("disabled", "Picked", null) : new Decision("unchanged", null, null)) is var d
+            ? d with { Kind = "camera", Key = camera.Key, Picked = picked, Group = groups.PathOf("camera", camera.Name, null, tree: false) }
+            : null!;
 
     // every piece's target key by index in the map's own order, before any run: the page marks what the next run is working on
     public sealed record KeyList(List<string> Blocks, List<string> PlainBlocks, List<string> Items);
