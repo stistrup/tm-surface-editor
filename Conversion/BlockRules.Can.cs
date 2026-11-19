@@ -10,7 +10,7 @@ internal static partial class BlockRules
     public static bool Can(string pick, CGameCtnBlock block, ConversionRun run)
     {
         var (theme, sides, way) = ConversionRules.SplitChoice(pick);
-        using var _ = run.Items.WithTheme(theme, sides);
+        using var _ = run.WithTheme(theme, sides);
         return CanWay(way!, block, run);
     }
 

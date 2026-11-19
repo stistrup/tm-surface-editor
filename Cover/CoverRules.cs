@@ -49,7 +49,7 @@ internal static class CoverRules
         var (name, coord) = (block.Name, block.Coord);
         if (!run.Shapes.IsTerrain(name) || !run.Rules.CoversTerrainAt(coord.X, coord.Z) || IsWater(name)
             || run.Cover.BuiltOn.Any(c => c.X == coord.X && c.Z == coord.Z && c.Y <= coord.Y + 1)
-            || run.Items.CoverTerrainFor(name, VariantOf(block), MobilOf(block), run.Map.Collection!.Value, run.Cover.UnderDeco.Contains((coord.X, coord.Z))) is not { } snowBlock) return false;
+            || run.Items.CoverTerrainFor(run.Look, name, VariantOf(block), MobilOf(block), run.Map.Collection!.Value, run.Cover.UnderDeco.Contains((coord.X, coord.Z))) is not { } snowBlock) return false;
         run.Covered.Add((block, VariantOf(block), MobilOf(block)));
         Cover(run, block, snowBlock);
         block.Flags &= ~0xFFF & ~(0x3F << 21);
@@ -80,7 +80,7 @@ internal static class CoverRules
             return true;
         }
         if (run.Shapes.IsTerrain(block.Name) || block.IsPillar || run.Shapes.IsPillarBlock(block.Name) || block.IsFree
-            || run.Items.CoverDecoFor(block.Name, VariantOf(block), MobilOf(block), run.Map.Collection!.Value, block.IsGround) is not { } snowDeco) return false;
+            || run.Items.CoverDecoFor(run.Look, block.Name, VariantOf(block), MobilOf(block), run.Map.Collection!.Value, block.IsGround) is not { } snowDeco) return false;
         Cover(run, block, snowDeco);
         Bump(run.Report.CoveredTerrain, block.Name);
         return true;
@@ -91,7 +91,7 @@ internal static class CoverRules
     {
         var coord = block.Coord;
         if (!run.Shapes.IsTerrain(block.Name) || IsWater(block.Name) || !CoveredGameplay(run).TryGetValue((coord.X, coord.Z), out var above)
-            || run.Items.GameplayGroundFor(above.Block.Name, above.Variant, above.Mobil, run.Map.Collection!.Value) is not { } ground) return false;
+            || run.Items.GameplayGroundFor(run.Look, above.Block.Name, above.Variant, above.Mobil, run.Map.Collection!.Value) is not { } ground) return false;
         Cover(run, block, ground);
         run.GroundOf[block] = above.Block;
         (block.Coord, block.Direction) = (above.Block.Coord, above.Block.Direction);
@@ -117,7 +117,7 @@ internal static class CoverRules
     public static bool DecoInTerrain(CGameCtnBlock block, ConversionRun run)
     {
         if (!run.InTerrain(block) || !run.Rules.CoversTerrainAt(block.Coord.X, block.Coord.Z)
-            || run.Items.CoverDecoFor(block.Name, VariantOf(block), MobilOf(block), run.Map.Collection!.Value) is not { } snowDeco) return false;
+            || run.Items.CoverDecoFor(run.Look, block.Name, VariantOf(block), MobilOf(block), run.Map.Collection!.Value) is not { } snowDeco) return false;
         Cover(run, block, snowDeco);
         Bump(run.Report.CoveredTerrain, block.Name);
         return true;

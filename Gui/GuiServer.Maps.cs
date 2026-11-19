@@ -143,7 +143,7 @@ internal sealed partial class GuiServer
         DocumentState working;
         lock (documents) working = SettingsStore.Default.Document(uid);
         JsonObject settings;
-        try { settings = await GroupRun.Apply(preview, map, new MapSettings(working.Settings), steps, GroupCatalog.Load(dataDir), only?.Select(PresetApply.Normal).ToHashSet()); }
+        try { settings = await GroupRun.Apply(async s => (await preview.Settled(map, s)) is var r ? r.Blocks.Values.Concat(r.Items.Values) : [], new MapSettings(working.Settings), steps, GroupCatalog.Load(dataDir), only?.Select(PresetApply.Normal).ToHashSet()); }
         catch (ConversionPreview.Superseded e) { throw new Refused(409, e.Message); }
         catch (FormatException e) { throw new Refused(400, e.Message); }
         DocumentState state;

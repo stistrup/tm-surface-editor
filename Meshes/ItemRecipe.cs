@@ -32,6 +32,15 @@ public enum ItemKind
 }
 
 // per-map look of items; part of the item's name where it changes the mesh
+// what one map's pieces are built as: its catalog (environment) and style, the piece's theme and sides (null: the theme's own)
+public sealed record ItemLook(BlockCatalog Shapes, ItemStyle Style, Theme Theme, string? Sides)
+{
+    public string? Environment => Shapes.Environment;
+
+    // open-zone sides (Deco ground on non-Deco blocks) go with the sides: kept only where those stay native
+    public bool ZoneSides => Theme.ZoneSides(Sides);
+}
+
 public sealed record ItemStyle(bool TerrainCover = true, float SkinLift = ItemStyle.DefaultSkinLift, float SkinEdge = ItemStyle.DefaultSkinEdge)
 {
     public const float DefaultSkinLift = 0.02f;

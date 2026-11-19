@@ -23,7 +23,7 @@ internal static class SurfaceTops
         var (archetype, baked) = ArchetypeOf(run, block);
         // the game draws the placed variant's body
         if (inBlock && run.Rules.Options.CustomBlocks && run.Shapes.Waypoint(block.Name) is null
-            && run.Items.BlockFor(block.Name, archetype, block.IsGround, VariantOf(block), MobilOf(block), run.Map.Collection!.Value, baked,
+            && run.Items.BlockFor(run.Look, block.Name, archetype, block.IsGround, VariantOf(block), MobilOf(block), run.Map.Collection!.Value, baked,
                 kind == ItemKind.TopOfTwin ? ItemKind.TopOfTwinBody : ItemKind.TopsBody, Placement.Tilt(block)) is { } iceBlock)
         {
             run.Customs[block] = iceBlock;

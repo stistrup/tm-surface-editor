@@ -23,7 +23,7 @@ internal static class ItemSwaps
             else if (model.Author != "Nadeo") continue;
             else if (picked == "keep" || picked is null && run.Rules.KeepsItem(model.Id)) Bump(run.Report.KeptByList, model.Id);
             else if (SwapTree(run, item, model, picked, snow)) { if (item.ItemModel.Id == Removed) removed.Add(item); }
-            else if (run.Items.ForItem(model.Id) is { } copy) PlaceCopy(run, item, model, copy, icedAt);
+            else if (run.Items.ForItem(run.Collection, model.Id) is { } copy) PlaceCopy(run, item, model, copy, icedAt);
             else if (run.Items.Failures.ContainsKey(model.Id)) Bump(run.Report.ItemsNotConverted, model.Id);
             else if (snow.Under(at) && FlushWithSurface(run, item, snow))
             {

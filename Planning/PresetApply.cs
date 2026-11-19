@@ -6,9 +6,9 @@ namespace TmSurfaceEditor;
 internal static class PresetApply
 {
     // only: the piece keys to take (null: all); other pieces keep their picks
-    public static JsonObject Settings(ConversionPreview.Result result, MapSettings into, IReadOnlySet<string>? only = null)
+    public static JsonObject Settings(IEnumerable<PiecePlanner.Decision> pieces, MapSettings into, IReadOnlySet<string>? only = null)
     {
-        var picks = result.Blocks.Values.Concat(result.Items.Values)
+        var picks = pieces
             .Where(d => d.Kind != "" && (only is null || only.Contains(Normal(d.Key))))
             .Select(d => (d.Key, PickOf(d)));
         return With(into, picks);
@@ -38,7 +38,7 @@ internal static class PresetApply
     }
 
     // null: stays as it is
-    private static string? PickOf(ConversionPreview.Decision d)
+    private static string? PickOf(PiecePlanner.Decision d)
     {
         // keep and no target are the same now
         if (d.Picked is { } own) return own == "keep" ? null : own;

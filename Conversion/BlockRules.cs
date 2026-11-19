@@ -79,7 +79,7 @@ internal static partial class BlockRules
         var choice = run.Rules.PieceChoice(block);
         // picks only: engine-off renames first, as the rules do
         if (!run.Rules.RulesOn && !block.Name.StartsWith("Gate")) Gates.EngineOff(block, run);
-        using var theme = run.Items.WithTheme(run.Rules.PieceTheme(block), run.Rules.PieceSides(block));
+        using var theme = run.WithTheme(run.Rules.PieceTheme(block), run.Rules.PieceSides(block));
         switch (choice)
         {
             case "keep":
@@ -136,7 +136,7 @@ internal static partial class BlockRules
 
     private static bool AlreadyThemed(CGameCtnBlock block, ConversionRun run)
     {
-        var word = run.Items.Theme.BlockWord;
+        var word = run.Look.Theme.BlockWord;
         if (!(word is not null && block.Name.Contains(word)) && !block.Name.Contains('\\')) return false;
         // flipped ice shows concrete: ice top
         if (!block.Name.Contains('\\')) SurfaceTops.Add(run, block, run.Variant(block), run.Clips(block), ItemKind.TopOfTwin, inBlock: true);
@@ -205,7 +205,7 @@ internal static partial class BlockRules
 
     // air open roads off Stadium become items
     private static string? TwinOf(CGameCtnBlock block, ConversionRun run)
-        => !block.IsGround && block.Name.StartsWith("Open") && !run.Collection.StartsWith("Stadium") || run.Items.Theme.BlockWord is not { } word ? null
+        => !block.IsGround && block.Name.StartsWith("Open") && !run.Collection.StartsWith("Stadium") || run.Look.Theme.BlockWord is not { } word ? null
             : Candidates(block.Name, word).FirstOrDefault(c => Available(c, run));
 
     // water stays water: an ice top on a water block is a solid slab; banks with an ice version swapped above
@@ -258,7 +258,7 @@ internal static partial class BlockRules
     }
 
     private static string? CoverTwinOf(CGameCtnBlock block, ConversionRun run)
-        => (block.IsGround || run.InTerrain(block)) && BlockNames.IsWholeOnGround(block.Name, run.Collection) && run.Items.Theme.BlockWord is { } word
+        => (block.IsGround || run.InTerrain(block)) && BlockNames.IsWholeOnGround(block.Name, run.Collection) && run.Look.Theme.BlockWord is { } word
             && "Platform" + word + block.Name["DecoPlatform".Length..] is var twin && Available(twin, run) ? twin : null;
 
     // waypoints as custom blocks need customWaypoints; free blocks too, the game turns and tilts them; ground blocks keep their ground plate.
@@ -276,17 +276,17 @@ internal static partial class BlockRules
         var (variant, mobil, collection, noClips) = (VariantOf(block), MobilOf(block), run.Map.Collection!.Value, ConversionRun.NoClips);
         var stack = NeedsNativeUnder(block, run);
         var (self, selfBaked) = !stack && ClipArchetype(block, run) is { } other ? other : (name, noClips);
-        var built = items.BlockFor(name, self, block.IsGround, variant, mobil, collection, selfBaked, lift: stack) is { } own
+        var built = items.BlockFor(run.Look, name, self, block.IsGround, variant, mobil, collection, selfBaked, lift: stack) is { } own
             ? (own, self, selfBaked)
             : run.SurfaceParents.Of(name, variant, run.Clips(block)) is { } parent
-                && items.BlockFor(name, parent.Name, block.IsGround, variant, mobil, collection, parent.Baked, lift: stack) is { } onParent
+                && items.BlockFor(run.Look, name, parent.Name, block.IsGround, variant, mobil, collection, parent.Baked, lift: stack) is { } onParent
                 ? (onParent, parent.Name, parent.Baked) : default((BuiltBlock, string, IReadOnlySet<int>)?);
         if (built is not var (iceBlock, archetype, baked)) return false;
         run.Customs[block] = iceBlock;
         run.BuiltAs[block] = (archetype, baked, stack);
         if (stack) run.Stacked.Add(block);
         // only the body's own terrain: the game still draws the clips, terrain ones included
-        else if (block.IsGround && BlockNames.OnTerrainShape(name) && items.For(name, true, variant, mobil, baked, ItemKind.TerrainFaces) is { } terrain && terrain != BuiltItem.Nothing
+        else if (block.IsGround && BlockNames.OnTerrainShape(name) && items.For(run.Look, name, true, variant, mobil, baked, ItemKind.TerrainFaces) is { } terrain && terrain != BuiltItem.Nothing
             && ItemPlacer.Place(run, block, variant, baked, ItemKind.TerrainFaces))
             Bump(run.Report.TerrainItems, name);
         Bump(run.Report.ReplacedByBlock, name);
@@ -299,7 +299,7 @@ internal static partial class BlockRules
     {
         if (!run.Rules.Options.ClipSidesInBlock || block.IsGround || block.IsFree || run.Shapes.EnvironmentHas(SurfaceTops.Clipless) == false) return null;
         var shown = run.Clips(block);
-        var theme = run.Items.Theme;
+        var theme = run.Look.Theme;
         var map = theme.Map(null);
         return run.Shapes.ClipMaterials(block.Name, false, VariantOf(block), MobilOf(block), shown).Any(m => theme.SwappedIn(map, m))
             && !run.ClipsShowWithout(block) ? (SurfaceTops.Clipless, shown) : null;
@@ -318,7 +318,7 @@ internal static partial class BlockRules
     private static bool HasTerrainFaces(CGameCtnBlock block, ConversionRun run)
     {
         if (!block.IsGround || !BlockNames.OnTerrainShape(block.Name)) return false;
-        return run.Items.For(block.Name, true, VariantOf(block), MobilOf(block), ConversionRun.NoClips, ItemKind.TerrainFaces) is { } faces && faces != BuiltItem.Nothing;
+        return run.Items.For(run.Look, block.Name, true, VariantOf(block), MobilOf(block), ConversionRun.NoClips, ItemKind.TerrainFaces) is { } faces && faces != BuiltItem.Nothing;
     }
 
     private static bool AsItem(CGameCtnBlock block, ConversionRun run)
@@ -356,7 +356,7 @@ internal static partial class BlockRules
     public static bool IsScenery(string name, int flags, ConversionRun run)
         => SceneryFamilies.Any(name.StartsWith) || run.Shapes.IsPillarBlock(name)
             || !WantsItem(name) && !(run.Shapes.Materials(name, (flags & Ground) != 0, (flags >> 21) & 0x3F, flags & 0xFFF, ConversionRun.NoClips) is { } materials
-                && materials.Any(run.Items.Theme.IsRoadMaterial));
+                && materials.Any(run.Look.Theme.IsRoadMaterial));
 
     private static bool WantsItem(string name)
         => Surface().IsMatch(name) || TwinPrefixes.Any(name.StartsWith) || name.StartsWith("SnowRoad") || name.StartsWith("DecoWall");

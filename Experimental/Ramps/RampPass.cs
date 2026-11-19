@@ -31,7 +31,7 @@ internal static class RampPass
                 }
             if (sides == 0) continue;
             var (archetype, baked, lift) = run.BuiltAs[block];
-            if (run.Items.BlockFor(block.Name, archetype, block.IsGround, VariantOf(block), MobilOf(block), run.Map.Collection!.Value, baked, lift: lift, ramp: sides) is not { } ramped) continue;
+            if (run.Items.BlockFor(run.Look, block.Name, archetype, block.IsGround, VariantOf(block), MobilOf(block), run.Map.Collection!.Value, baked, lift: lift, ramp: sides) is not { } ramped) continue;
             run.Customs[block] = ramped;
             Bump(run.Report.Ramped, block.Name);
         }

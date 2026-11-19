@@ -35,7 +35,7 @@ internal static class CoverReach
             var joined = own.Where(joins.ContainsKey).ToList();
             if (joined.Count == own.Count || !reached.Contains(root(at))) continue;
             var keep = joined.SelectMany(p => joins[p]).Select(w => Vector3.Transform(new Vector3(w.X, 0, w.Y), toLocal)).Select(l => new Vector2(l.X, l.Z)).ToList();
-            if (run.Items.CoverTerrainFor(block.Name, variant, mobil, run.Map.Collection!.Value, run.Cover.UnderDeco.Contains(at), keep) is { } limited)
+            if (run.Items.CoverTerrainFor(run.Look, block.Name, variant, mobil, run.Map.Collection!.Value, run.Cover.UnderDeco.Contains(at), keep) is { } limited)
                 run.Customs[block] = limited;
         }
     }
@@ -43,12 +43,12 @@ internal static class CoverReach
     private static Found Find(ConversionRun run)
     {
         var found = new Found();
-        var cover = run.Items.Theme.Cover;
+        var cover = run.Look.Theme.Cover;
         foreach (var (block, variant, mobil) in run.Covered)
         {
             var at = (block.Coord.X, block.Coord.Z);
             if (run.Shapes.Units(block.Name, true, variant) is not { } units
-                || run.Items.Pieces(block.Name, true, variant, mobil, ItemKind.CoveredTerrain) is not { } pieces) continue;
+                || run.Items.Pieces(run.Look, block.Name, true, variant, mobil, ItemKind.CoveredTerrain) is not { } pieces) continue;
             if (pieces.Where(p => p.Visible).All(p => p.Material == cover || p.Material.EndsWith("Water"))) { found.Whole.Add(at); continue; }
             var toWorld = Placement.Of(block, Placement.Footprint(units));
             Matrix4x4.Invert(toWorld, out var toLocal);

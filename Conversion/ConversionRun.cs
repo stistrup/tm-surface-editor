@@ -15,6 +15,9 @@ internal sealed class ConversionRun
     public ConversionRules Rules { get; }
     public ConversionReport Report { get; } = new();
 
+    // what pieces are built as: the map's, with the piece's theme while its pick runs (WithTheme)
+    public ItemLook Look { get; private set; }
+
     public ConversionRules DataRules { get; }
     public HashSet<string> KnownBlocks { get; }
     public BlockCatalog Shapes { get; }
@@ -64,9 +67,9 @@ internal sealed class ConversionRun
     public Dictionary<CGameCtnBlock, string> DecidedBy { get; } = new(ReferenceEqualityComparer.Instance);
 
     public ConversionRun(CGameCtnChallenge map, string collection, ConversionRules rules, ConversionRules dataRules, HashSet<string> knownBlocks,
-        BlockCatalog shapes, ItemBuilder items, SurfaceParents surfaceParents, Dictionary<string, List<(Vector3 A, Vector3 B, Vector3 C)>> flatTops)
+        BlockCatalog shapes, ItemBuilder items, ItemLook look, SurfaceParents surfaceParents, Dictionary<string, List<(Vector3 A, Vector3 B, Vector3 C)>> flatTops)
     {
-        (Map, Collection, Rules, DataRules, KnownBlocks, Shapes, Items, SurfaceParents, FlatTops) = (map, collection, rules, dataRules, knownBlocks, shapes, items, surfaceParents, flatTops);
+        (Map, Collection, Rules, DataRules, KnownBlocks, Shapes, Items, Look, SurfaceParents, FlatTops) = (map, collection, rules, dataRules, knownBlocks, shapes, items, look, surfaceParents, flatTops);
         var resolver = this.resolver = new ClipResolver(shapes);
         Grid = map.GetBlocks().Where(b => !b.IsFree).ToList();
         Placed = resolver.OfAll(Grid);
@@ -81,6 +84,20 @@ internal sealed class ConversionRun
     }
 
     private readonly ClipResolver resolver;
+
+    // the theme's own sides: no name of their own, so the items stay as they were
+    public IDisposable WithTheme(string? name, string? sides = null)
+    {
+        var before = Look;
+        var theme = Items.ThemeNamed(name);
+        Look = Look with { Theme = theme, Sides = sides == theme.Sides ? null : sides };
+        return new Restore(() => Look = before);
+    }
+
+    private sealed class Restore(Action undo) : IDisposable
+    {
+        public void Dispose() => undo();
+    }
     private Dictionary<Int3, List<int>>? byCell;
 
     // a clipless block here (the stand-in): a neighbour would show clips it hides now, borders where the two joined

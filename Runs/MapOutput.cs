@@ -10,6 +10,12 @@ namespace TmSurfaceEditor;
 // what a converted map needs before it's a valid file of its own
 internal static class MapOutput
 {
+    // the file in the folder whatever its case (the game's file system ignores case), else the new path
+    public static string Existing(string folder, string fileName)
+        => Directory.Exists(folder) && Directory.EnumerateFiles(folder, "*.Map.Gbx", new EnumerationOptions { MatchCasing = MatchCasing.CaseInsensitive })
+            .FirstOrDefault(f => string.Equals(Path.GetFileName(f), fileName, StringComparison.OrdinalIgnoreCase)) is { } there
+            ? there : Path.Combine(folder, fileName);
+
     // fakeAuthorTime: validated with a dummy 1:00:00; asAuthor: the local account (testrunAuthor) as author
     public static void Prepare(CGameCtnChallenge map, string name, string uid, bool fakeAuthorTime, bool asAuthor)
     {

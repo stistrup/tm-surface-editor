@@ -1,11 +1,11 @@
 namespace TmSurfaceEditor;
 
 // the GUI's conversion: one at a time in the background; the page polls it and finds it again after a reload
-internal sealed class ConvertJobs(ConvertCommand convert, ConversionPreview preview)
+internal sealed class ConvertJobs(string dataDir, ConversionPreview preview)
 {
     // State: running | done | failed (none converted) | cancelled (Results: the maps saved before). Outcome: the only map's; Results: each map's. Outputs relative to Maps
     public sealed record Job(string Id, string Map, string Name, int Count, string State, ConvertProgress.Snapshot Progress, DateTime Started, DateTime? Ended,
-        ConvertCommand.Outcome? Outcome, string? Error, List<Result> Results, bool Cancelling = false)
+        ConvertOutcome? Outcome, string? Error, List<Result> Results, bool Cancelling = false)
     {
         // item files built while the game ran: it shows them only after a restart
         public int RestartItems { get; init; }
@@ -27,7 +27,7 @@ internal sealed class ConvertJobs(ConvertCommand convert, ConversionPreview prev
     }
 
     // null: one is running already
-    public Job? Start(IReadOnlyList<string> maps, ConvertCommand.Choices choices, string name)
+    public Job? Start(IReadOnlyList<string> maps, ConvertChoices choices, string name)
     {
         lock (gate)
         {
@@ -39,14 +39,14 @@ internal sealed class ConvertJobs(ConvertCommand convert, ConversionPreview prev
             var (id, steps, started) = (job.Id, progress, job.Started);
             _ = Task.Run(async () =>
             {
-                List<ConvertCommand.MapResult> results = [];
+                List<MapResult> results = [];
                 string? error = null;
                 try
                 {
                     // the preview's builds write the same item files
                     if (preview.Building().Running) steps.Start("Read map", 0, "waiting for the preview's builds");
                     while (preview.Building().Running) await Task.Delay(500, token);
-                    results = convert.Convert(maps, choices, steps, token);
+                    results = new ConvertBatch(dataDir, choices, steps, token).Run(maps);
                     if (!token.IsCancellationRequested && results.All(r => r.Done is null)) error = maps.Count == 1 ? results.Single().Error : "none of them converted";
                 }
                 catch (OperationCanceledException) { }

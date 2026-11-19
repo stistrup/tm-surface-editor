@@ -28,7 +28,7 @@ internal sealed partial class GuiServer
         var names = batch ? maps.Select(m => DefaultNameOrNull(m!, suffix)).OfType<string>().ToList() : [name];
         if (!ask.Overwrite && names.Any(n => TargetExists(folder, n))) throw new Refused(409, "a map of that name is already there");
         if (ask.MeAsAuthor && Paths.TestrunAuthorIfSet is null) throw new Refused(400, "no user ID saved for Me as author");
-        var choices = new ConvertCommand.Choices(outDir, batch ? null : name, ask.FakeAuthorTime, ask.MeAsAuthor, ask.RebuildBlocks, ask.Overwrite)
+        var choices = new ConvertChoices(outDir, batch ? null : name, ask.FakeAuthorTime, ask.MeAsAuthor, ask.RebuildBlocks, ask.Overwrite)
             { Settings = batch ? null : new MapSettings(ask.Settings ?? new JsonObject()), Suffix = suffix };
         if (jobs.Start(maps!, choices, batch ? $"{maps.Count} maps" : name) is not { } started) throw new Refused(409, "a conversion is already running");
         await Json(c.Response, started);

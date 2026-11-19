@@ -61,7 +61,7 @@ internal sealed partial class GuiServer(string url, string webRoot, ConversionPr
         ["/api/preview-scene"] = PreviewScene,
         ["/api/presets"] = c => Json(c.Response, Preset.Load(dataDir)),
         ["/api/groups"] = c => Json(c.Response, GroupCatalog.Load(dataDir) is var g ? new { Methods = g.Methods.ToDictionary(m => m.Key, m => m.Value.Label), g.Tree } : null),
-        ["/api/piece-keys"] = async c => await Json(c.Response, await Task.Run(() => ConversionPreview.KeysOf(MapFileOf(c))).ConfigureAwait(false)),
+        ["/api/piece-keys"] = async c => await Json(c.Response, await Task.Run(() => PiecePlanner.KeysOf(MapFileOf(c))).ConfigureAwait(false)),
         ["/api/settings"] = async c => await Json(c.Response, await Task.Run(() => preview.StateOf(MapFileOf(c))).ConfigureAwait(false)),
     };
 

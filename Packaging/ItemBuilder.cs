@@ -17,41 +17,11 @@ public sealed partial class ItemBuilder
         this.dataDir = dataDir;
         stamps = new ItemStamps(dataDir);
         Paths.MoveBuiltItemsToCache();
-        themeOf = new(() => Theme.Load(dataDir));
     }
 
-    // the theme new requests take: the default, or a piece's material while its pick runs (WithTheme)
-    public Theme Theme => themeOf.Value!;
-    private readonly ThreadLocal<Theme> themeOf;
-
-    public IDisposable WithTheme(string? name, string? sides = null)
-    {
-        var (before, beforeSides) = (themeOf.Value!, sidesOf.Value);
-        themeOf.Value = Theme.Load(dataDir, name ?? Theme.DefaultName);
-        // the theme's own sides: no name of their own, so the items stay as they were
-        sidesOf.Value = sides == themeOf.Value.Sides ? null : sides;
-        return new Restore(() => (themeOf.Value, sidesOf.Value) = (before, beforeSides));
-    }
-
-    // null: the theme's own
-    private readonly ThreadLocal<string?> sidesOf = new();
-
-    // open-zone sides (Deco ground on non-Deco blocks) go with the sides: kept only where those stay native
-    public bool ZoneSides => Theme.ZoneSides(sidesOf.Value);
-
-    public bool ZoneSidesOf(string? theme, string? sides) => Theme.Load(dataDir, theme ?? Theme.DefaultName).ZoneSides(sides);
-
-    private sealed class Restore(Action undo) : IDisposable
-    {
-        public void Dispose() => undo();
-    }
+    public Theme ThemeNamed(string? name) => Theme.Load(dataDir, name ?? Theme.DefaultName);
 
     private Theme ThemeOf(ItemRequest r) => Theme.Load(dataDir, r.ThemeName);
-
-    // per thread: a convert's workers each do one map at a time and set these first (MapConverter.Run)
-    private readonly ThreadLocal<BlockCatalog> shapesOf = new(() => new BlockCatalog(Paths.ExtractedStadium));
-    private readonly ThreadLocal<ItemStyle> styleOf = new(() => new ItemStyle());
-    private BlockCatalog shapes => shapesOf.Value!;
 
     // one item or block file is planned, built or written by one map at a time
     private readonly ConcurrentDictionary<string, object> nameLocks = new();
@@ -65,12 +35,11 @@ public sealed partial class ItemBuilder
 
     public HashSet<string> Missing { get; } = [];
 
-    public string? Environment { get => shapes.Environment; set => shapes.Environment = value; }
+    // build output and failures
+    public TextWriter Log { get; init; } = Console.Out;
 
     // planning: For() only notes what's needed, BuildPlanned() builds it
     public bool Planning { get; set; }
-
-    public ItemStyle Style { get => styleOf.Value!; set => styleOf.Value = value; }
 
     // planning works out each new item's mesh at once: one plan, one build
     public bool MeshWhilePlanning { get; init; }
@@ -116,10 +85,11 @@ public sealed partial class ItemBuilder
         get { lock (planned) lock (plannedCopies) return plannedCopies.Count + planned.Count; }
     }
 
-    public BuiltItem? For(string block, bool ground, int variant, int mobil, IReadOnlySet<int> clips, ItemKind kind = ItemKind.None, Vector2 tilt = default, IReadOnlyList<Vector2>? snowKeep = null)
+    public BuiltItem? For(ItemLook look, string block, bool ground, int variant, int mobil, IReadOnlySet<int> clips, ItemKind kind = ItemKind.None, Vector2 tilt = default, IReadOnlyList<Vector2>? snowKeep = null)
     {
-        var request = new ItemRequest(block, ground, variant, mobil, clips, kind, tilt, Environment, Style, snowKeep, Theme.Name, sidesOf.Value);
-        var name = ItemRecipe.ItemName(request, shapes, Theme);
+        var shapes = look.Shapes;
+        var request = new ItemRequest(block, ground, variant, mobil, clips, kind, tilt, look.Environment, look.Style, snowKeep, look.Theme.Name, look.Sides);
+        var name = ItemRecipe.ItemName(request, shapes, look.Theme);
         lock (failures) if (failedItems.Contains(name)) return null;
         lock (emptyItems) if (emptyItems.Contains(name) || stamps.IsKnownEmpty(name) && emptyItems.Add(name)) return BuiltItem.Nothing;
         if (shapes.Units(block, ground, variant) is not null && shapes.FindPlacedBlockParts(block, ground, variant, mobil, clips) is null)
@@ -134,13 +104,13 @@ public sealed partial class ItemBuilder
             {
                 if (Planning)
                 {
-                    if (Plan(request, name, builtFrom) is { } planError) return NoItem(name, block, planError, Console.Out);
+                    if (Plan(request, name, builtFrom) is { } planError) return NoItem(name, block, planError, Log);
                     lock (unbuilt) unbuilt.Add(path);
                     return new BuiltItem(ItemIdent(name), path, Size());
                 }
-                var error = Build(request, builtFrom, Console.Out);
+                var error = Build(request, builtFrom, Log);
                 lock (built) built.Add(name);
-                if (error is not null) return NoItem(name, block, error, Console.Out);
+                if (error is not null) return NoItem(name, block, error, Log);
             }
         }
         // current, or built under the lock: done (a dropped background build left it marked)
@@ -152,10 +122,10 @@ public sealed partial class ItemBuilder
     }
 
     // an item's pieces as it would be built, to look at (nothing written); kept by item name
-    public List<MeshPiece>? Pieces(string block, bool ground, int variant, int mobil, ItemKind kind)
+    public List<MeshPiece>? Pieces(ItemLook look, string block, bool ground, int variant, int mobil, ItemKind kind)
     {
-        var request = new ItemRequest(block, ground, variant, mobil, new HashSet<int>(), kind, default, Environment, Style, ThemeName: Theme.Name, Sides: sidesOf.Value);
-        return looked.GetOrAdd(ItemRecipe.ItemName(request, shapes, Theme), _ => new ItemMesh(Theme, Missing).Make(request) is { Error: null } made ? made.Pieces : null);
+        var request = new ItemRequest(block, ground, variant, mobil, new HashSet<int>(), kind, default, look.Environment, look.Style, ThemeName: look.Theme.Name, Sides: look.Sides);
+        return looked.GetOrAdd(ItemRecipe.ItemName(request, look.Shapes, look.Theme), _ => new ItemMesh(look.Theme, Missing).Make(request) is { Error: null } made ? made.Pieces : null);
     }
 
     // one item now, with its free clips
@@ -164,7 +134,7 @@ public sealed partial class ItemBuilder
         var free = !clips ? [] : new BlockCatalog(Paths.ExtractedStadium).ClipSides(block, false, 0)
             .SelectMany(s => s.Clips.Where(c => !c.Vertical && !c.Anti && c.Type.StartsWith("FreeClip")).Select(c => ClipKey.Of(s.Bit, c.Index)))
             .ToHashSet();
-        return Build(new ItemRequest(block, false, 0, 0, free, ItemKind.None, default, null, new ItemStyle()), null, Console.Out);
+        return Build(new ItemRequest(block, false, 0, 0, free, ItemKind.None, default, null, new ItemStyle()), null, Log);
     }
 
     // false when nothing was planned
@@ -174,7 +144,7 @@ public sealed partial class ItemBuilder
         var jobs = TakePlanned();
         if (jobs.Count == 0) return false;
         progress?.Invoke(0, jobs.Count);
-        RunBuilds(jobs, n => progress?.Invoke(n, jobs.Count), cancel);
+        RunBuilds(jobs, Log, n => progress?.Invoke(n, jobs.Count), cancel);
         return true;
     }
 
@@ -183,10 +153,10 @@ public sealed partial class ItemBuilder
         => [.. TakeCopies(), .. TakeRequests().Select(p => (Action<TextWriter>)(log => BuildRequest(p.Request, log, p.Made)))];
 
     // cancel: no new job starts, the running ones finish
-    public static void RunBuilds(List<Action<TextWriter>> jobs, Action<int>? progress = null, CancellationToken cancel = default)
+    public static void RunBuilds(List<Action<TextWriter>> jobs, TextWriter output, Action<int>? progress = null, CancellationToken cancel = default)
     {
         var parallel = BuildsAtOnce;
-        Console.WriteLine($"Building {jobs.Count} items, {parallel} at a time");
+        output.WriteLine($"Building {jobs.Count} items, {parallel} at a time");
         var done = 0;
         Parallel.ForEach(jobs, new ParallelOptions { MaxDegreeOfParallelism = parallel, CancellationToken = cancel }, job =>
         {
@@ -194,7 +164,7 @@ public sealed partial class ItemBuilder
             job(log);
             var n = Interlocked.Increment(ref done);
             progress?.Invoke(n);
-            if (log.ToString() is { Length: > 0 } text) lock (Console.Out) Console.Write($"[{n}/{jobs.Count}] " + text.TrimStart());
+            if (log.ToString() is { Length: > 0 } text) lock (output) output.Write($"[{n}/{jobs.Count}] " + text.TrimStart());
         });
     }
 

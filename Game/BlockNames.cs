@@ -23,4 +23,13 @@ internal static partial class BlockNames
     public static bool OnTerrainShape(string block) => Regex.IsMatch(block, "On[A-Z][a-z]+(Cliff|Hill)");
 
     public static bool IsWallMaterial(string material) => material is "TrackWall" or "TrackWallClips" or "Structure";
+
+    // native blocks seen in maps (known-blocks.txt) or extracted
+    public static HashSet<string> Known(string dataDir)
+    {
+        var names = File.ReadAllLines(Path.Combine(dataDir, "known-blocks.txt")).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var blockInfos in Paths.BlockInfoDirs(Paths.ExtractedStadium))
+            names.UnionWith(Directory.EnumerateFiles(blockInfos, "*.Gbx", SearchOption.AllDirectories).Select(f => Path.GetFileName(f).Split('.')[0]));
+        return names;
+    }
 }

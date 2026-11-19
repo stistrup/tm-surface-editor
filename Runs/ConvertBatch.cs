@@ -1,16 +1,16 @@
 using System.Text.Json.Nodes;
 using GBX.NET;
 using GBX.NET.Engines.Game;
-using static TmSurfaceEditor.ConvertCommand;
 
 namespace TmSurfaceEditor;
 
-// one convert over several maps: read, plan, build pieces, convert and save
+// one convert over several maps: read, plan, build pieces, convert and save; one map's failure leaves the others going.
+// cancel: stops before the next map or step; pieces being built finish, maps saved so far stay
 internal sealed class ConvertBatch
 {
     private const int MaxWorkers = 4;
 
-    private readonly Choices choices;
+    private readonly ConvertChoices choices;
     private readonly ConvertProgress progress;
     private readonly CancellationToken cancel;
     private readonly ItemBuilder items;
@@ -20,13 +20,15 @@ internal sealed class ConvertBatch
     private readonly SettingsStore log = SettingsStore.Default;
     private List<(BlockCatalog Shapes, MapConverter Converter)> workers = [];
     private readonly List<MapResult> results = [];
+    // presets: one dry run per step
+    private PiecePlanner? planner;
 
-    public ConvertBatch(string dataDir, Choices choices, ConvertProgress progress, CancellationToken cancel)
+    public ConvertBatch(string dataDir, ConvertChoices choices, ConvertProgress progress, CancellationToken cancel)
     {
         (this.dataDir, this.choices, this.progress, this.cancel) = (dataDir, choices, progress, cancel);
         items = new ItemBuilder(dataDir) { RewriteBlocks = choices.RebuildBlocks, MeshWhilePlanning = true };
         dataRules = ConversionRules.Load(dataDir);
-        known = KnownBlocks(dataDir);
+        known = BlockNames.Known(dataDir);
     }
 
     private sealed record Prepared(string Path, MapSettings Settings, ConversionRules Own, string From, List<string> Problems, string Name, string Target);
@@ -120,7 +122,7 @@ internal sealed class ConvertBatch
         var run = log.Add(choices.Kind, source, new MapRef(gbx.Node.MapUid, MapsRelative(map.Target), map.Name, MapFingerprint.Of(gbx.Node)), used, map.Problems);
         var reportFile = log.ReportFile(run.Id);
         File.WriteAllText(reportFile, ReportWriter.Format(map.Path, report, itemFailures));
-        return new(map.Path, new Outcome(map.Target, map.Name, run.Id, reportFile, map.From, Summary(report), map.Problems, failures, 0), null);
+        return new(map.Path, new ConvertOutcome(map.Target, map.Name, run.Id, reportFile, map.From, Summary(report), map.Problems, failures, 0), null);
     }
 
     private static string Summary(ConversionReport report)
@@ -138,7 +140,7 @@ internal sealed class ConvertBatch
         return missing.Count;
     }
 
-    // each item on the next free worker, each worker on its own thread (the item builder keeps per-thread state);
+    // each item on the next free worker, each worker on its own thread (a worker's catalog isn't thread-safe);
     // done: how many finished so far. cancel throws once the started ones are through; stop only stops starting new ones
     private static void OnWorkers<T, W>(IReadOnlyList<T> list, IReadOnlyList<W> workers, Action<W, T, int> work, Action<int> done,
         CancellationToken cancel, CancellationToken stop = default)
@@ -165,7 +167,7 @@ internal sealed class ConvertBatch
         {
             // the GUI's batch: each map's own
             null or "current" => log.Current(header.MapUid),
-            None => (MapSettings.Empty, "nothing"),
+            ConvertChoices.None => (MapSettings.Empty, "nothing"),
             "saved" => log.SavedOf(header.MapUid) is { } saved ? (new MapSettings(saved.Settings), $"saved {saved.Updated.ToLocalTime():yyyy-MM-dd HH:mm}")
                 : throw new FormatException("no saved settings for this map"),
             var given when File.Exists(given) => (SettingsFile(given), given),
@@ -175,13 +177,14 @@ internal sealed class ConvertBatch
         if (choices.Preset is { } presetName)
         {
             var preset = Preset.Load(dataDir).FirstOrDefault(p => p.Name == presetName) ?? throw new FormatException($"--preset: no preset '{presetName}'");
-            var applied = GroupRun.Apply(new ConversionPreview(dataDir), path, settings, preset.Steps, GroupCatalog.Load(dataDir), null).GetAwaiter().GetResult();
+            planner ??= new PiecePlanner(dataDir);
+            var applied = GroupRun.Apply(s => Task.FromResult(planner.Run(path, s).Pieces), settings, preset.Steps, GroupCatalog.Load(dataDir), null).GetAwaiter().GetResult();
             (settings, from) = (new MapSettings(applied), from + $" with preset {presetName}");
         }
         var problems = new List<string>();
         var own = settings.Read(problems);
         var name = choices.Name ?? MapNames.DefaultOutput(header.MapName, own.Name, choices.Suffix);
-        var target = Existing(choices.Folder, MapNames.FileName(name) ?? throw new FormatException($"\"{name}\" makes no file name"));
+        var target = MapOutput.Existing(choices.Folder, MapNames.FileName(name) ?? throw new FormatException($"\"{name}\" makes no file name"));
         if (File.Exists(target) && !choices.Overwrite) throw new IOException($"{target} is already there (overwrite to replace it)");
         return new Prepared(path, settings, own, from, problems, name, target);
     }

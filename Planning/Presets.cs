@@ -15,26 +15,26 @@ internal static class GroupRun
 {
     public const string Original = "original";
 
-    // only: piece keys to keep it to (null: the whole map)
-    public static async Task<JsonObject> Apply(ConversionPreview preview, string mapPath, MapSettings working, IEnumerable<GroupStep> steps, GroupCatalog catalog, IReadOnlySet<string>? only)
+    // decide: the map's pieces under these settings, once what they need is built. only: piece keys to keep it to (null: the whole map)
+    public static async Task<JsonObject> Apply(Func<MapSettings, Task<IEnumerable<PiecePlanner.Decision>>> decide, MapSettings working, IEnumerable<GroupStep> steps, GroupCatalog catalog, IReadOnlySet<string>? only)
     {
         var settings = working;
         // still on rules: those become targets first, once
         if (working.Json["rules"]?.GetValue<bool>() == true)
-            settings = new MapSettings(PresetApply.Settings(await preview.Settled(mapPath, working), working));
+            settings = new MapSettings(PresetApply.Settings(await decide(working), working));
         foreach (var step in steps)
         {
             var method = step.Method == Original ? null
                 : catalog.Methods.GetValueOrDefault(step.Method) ?? throw new FormatException($"no method {step.Method}");
-            var result = await preview.Settled(mapPath, RulesFor(settings, method?.Options));
-            var scope = result.Blocks.Values.Concat(result.Items.Values)
+            var pieces = (await decide(RulesFor(settings, method?.Options))).ToList();
+            var scope = pieces
                 .Where(d => d.Group is { } g && (step.Group == "" || g == step.Group || g.StartsWith(step.Group + "/")))
                 .Select(d => PresetApply.Normal(d.Key))
                 .Where(k => only is null || only.Contains(k))
                 .ToHashSet();
             settings = new MapSettings(method is null ? PresetApply.Fixed(settings, scope, "keep")
                 : method.Pick is { } pick ? PresetApply.Fixed(settings, scope, pick)
-                : PresetApply.Settings(result, settings, scope));
+                : PresetApply.Settings(pieces, settings, scope));
         }
         return settings.Json;
     }

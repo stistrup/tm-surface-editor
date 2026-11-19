@@ -19,12 +19,12 @@ public sealed class MapConverter(HashSet<string> knownBlocks, ConversionRules da
         var collection = map.Collection?.ToString() ?? "Stadium2020";
         var rules = dataRules.For(map.MapName, own);
         rules.AmbiguousKeys = PieceKeys.Ambiguous(map);
-        shapes.Environment = items.Environment = collection;
-        items.Style = new ItemStyle(rules.Options.SnowOnGroundDeco, rules.SkinLift ?? ItemStyle.DefaultSkinLift, rules.SkinEdge ?? ItemStyle.DefaultSkinEdge);
+        shapes.Environment = collection;
+        var style = new ItemStyle(rules.Options.SnowOnGroundDeco, rules.SkinLift ?? ItemStyle.DefaultSkinLift, rules.SkinEdge ?? ItemStyle.DefaultSkinEdge);
         Flips.Run(map, shapes, rules);
         CoverFill.UnderPickedGates(map, collection, shapes, rules);
         var filled = rules.Options.FillEmptyWithSnow ? CoverFill.Run(map, collection, shapes, rules) : 0;
-        var run = new ConversionRun(map, collection, rules, dataRules, knownBlocks, shapes, items, surfaceParents, flatTops);
+        var run = new ConversionRun(map, collection, rules, dataRules, knownBlocks, shapes, items, new ItemLook(shapes, style, items.ThemeNamed(null), null), surfaceParents, flatTops);
 
         run.Report.FilledCells = filled;
         if (items.Planning) BlockRules.LearnPicks(run, ConversionRules.AllPieceChoices(Paths.Data));
@@ -34,8 +34,8 @@ public sealed class MapConverter(HashSet<string> knownBlocks, ConversionRules da
         if (rules.Options.RampToSkins) RampPass.Run(run);
 
         // these read the native names
-        var snow = new CoverSurfaces(map, run.Replaced.Concat(run.Customs.Keys), run.Renamed, run.Skinned, shapes, items.Theme,
-            b => items.ZoneSidesOf(rules.PieceTheme(b), rules.PieceSides(b)));
+        var snow = new CoverSurfaces(map, run.Replaced.Concat(run.Customs.Keys), run.Renamed, run.Skinned, shapes, run.Look.Theme,
+            b => items.ThemeNamed(rules.PieceTheme(b)).ZoneSides(rules.PieceSides(b)));
         var trees = Trees.LostToBodies(run);
         PlaceNativesUnderBodies(run);
         RenameCustomBlocks(run);

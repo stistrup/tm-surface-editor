@@ -9,19 +9,22 @@ public sealed partial class ItemBuilder
     private readonly Dictionary<string, BuiltItem?> itemCopies = [];
     private readonly Dictionary<string, (string ItemId, string? Environment)> plannedCopies = [];
 
-    public BuiltItem? ForItem(string itemId)
+    public BuiltItem? ForItem(string? environment, string itemId)
     {
-        var key = CopyKey(Environment, itemId);
+        var key = CopyKey(environment, itemId);
         lock (NameLock("copy:" + key))
         {
             lock (itemCopies) if (itemCopies.TryGetValue(key, out var known)) return known;
-            var copy = BuildItemCopy(itemId, Environment, Console.Out, Planning);
+            var copy = BuildItemCopy(itemId, environment, Log, Planning);
             bool planning;
             lock (plannedCopies) planning = plannedCopies.ContainsKey(key);
             if (!planning) lock (itemCopies) itemCopies[key] = copy;
             return copy;
         }
     }
+
+    // copies take the default theme: items have no theme pick
+    private Theme CopyTheme => ThemeNamed(null);
 
     private static string CopyKey(string? environment, string itemId) => $"{environment}:{itemId}";
 
@@ -48,7 +51,7 @@ public sealed partial class ItemBuilder
         if (look.ItemFile(itemId) is not { } file) return null;
         try
         {
-            var materialMap = Theme.Map("item:");
+            var materialMap = CopyTheme.Map("item:");
             if (!DrivesOnReplaced(look, file, materialMap)) return null;
             var name = CopyName(itemId, file);
             var path = ItemPath(name);
@@ -64,7 +67,7 @@ public sealed partial class ItemBuilder
                 var catalog = new BlockCatalog(Paths.ExtractedStadium) { Environment = environment };
                 var pieces = new MeshExporter(catalog.Files, materialMap).ExportItem(file, out var reason) ?? throw new InvalidDataException(reason);
                 lock (Missing) Missing.UnionWith(catalog.Missing);
-                if (Finish(Theme, new HashSet<string>(), name, pieces, null, catalog, builtFrom, log) is { } error) throw new InvalidDataException(error);
+                if (Finish(CopyTheme, new HashSet<string>(), name, pieces, null, catalog, builtFrom, log) is { } error) throw new InvalidDataException(error);
             }
             var header = Gbx.ParseHeaderNode<CGameItemModel>(path).Ident;
             return new BuiltItem(ident with { Collection = header.Collection, Author = header.Author }, path, (1, 1));
@@ -72,7 +75,7 @@ public sealed partial class ItemBuilder
         catch (Exception e)
         {
             lock (failures) failures[itemId] = Reason(e);
-            log.WriteLine($"  no {Theme.Tag.ToLowerInvariant()} copy of item {itemId}: {Reason(e)}");
+            log.WriteLine($"  no {CopyTheme.Tag.ToLowerInvariant()} copy of item {itemId}: {Reason(e)}");
             return null;
         }
     }
@@ -85,14 +88,14 @@ public sealed partial class ItemBuilder
         catch (InvalidCastException) { return false; }
         lock (Missing) Missing.UnionWith(look.Missing);
         bool Converts(string m) => materialMap.ContainsKey(m)
-            ? Theme.SwappedIn(materialMap, m)
-            : MaterialLib.Surface(m) is { } own && Theme.Replaces.Contains(own);
+            ? CopyTheme.SwappedIn(materialMap, m)
+            : MaterialLib.Surface(m) is { } own && CopyTheme.Replaces.Contains(own);
         return plain is not null && plain.Any(p => Converts(p.Material));
     }
 
     private string CopyName(string itemId, string file)
     {
         var env = Path.GetRelativePath(Path.GetDirectoryName(Paths.ExtractedStadium)!, file).Split('/')[0];
-        return Theme.ItemPrefix + itemId + Theme.NameTag + (env == "Stadium" ? "" : "_" + env);
+        return CopyTheme.ItemPrefix + itemId + CopyTheme.NameTag + (env == "Stadium" ? "" : "_" + env);
     }
 }
