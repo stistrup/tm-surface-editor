@@ -52,7 +52,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.version.outputs.version }}
-      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
@@ -68,33 +67,6 @@ jobs:
         run: |
           sed -i "s|<Version>[^<]*</Version>|<Version>$VERSION</Version>|" TmSurfaceEditor.csproj
           tools/release
-
-      # SignPath signs TmSurfaceEditor.exe inside the uploaded folder; skipped until the secret exists
-      - name: Upload unsigned Windows build
-        id: unsigned
-        if: env.SIGNPATH_API_TOKEN != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: unsigned-win-x64
-          path: dist/TmSurfaceEditor-${{ env.VERSION }}-win-x64
-      - name: Sign
-        if: env.SIGNPATH_API_TOKEN != ''
-        uses: signpath/github-action-submit-signing-request@v1
-        with:
-          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
-          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
-          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
-          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
-          wait-for-completion: true
-          output-artifact-directory: signed
-      - name: Zip signed build
-        if: env.SIGNPATH_API_TOKEN != ''
-        run: |
-          name="TmSurfaceEditor-$VERSION-win-x64"
-          rm -rf "dist/$name" "dist/$name.zip"
-          mv signed "dist/$name"
-          python3 -I -c 'import shutil, sys; shutil.make_archive(sys.argv[1], "zip", "dist", sys.argv[2])' "dist/$name" "$name"
 
       - name: Commit and tag
         run: |
