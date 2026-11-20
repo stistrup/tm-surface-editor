@@ -23,7 +23,7 @@ public static class Paths
     public static string OldExtractPlugin => Path.Combine(Openplanet, "Plugins", "IceConverterExtract");
 
     public static string DropFolder => Path.Combine(Maps, "To Ice");
-    public static string OutFolder => Path.Combine(Maps, "ICE in progress");
+    public static string OutFolder => Path.Combine(Maps, "SurfaceEditor draft");
 
     // relative to Maps with "/" when under it, else the full path
     public static string MapsRelativeOrFull(string path)

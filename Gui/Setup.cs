@@ -61,7 +61,7 @@ internal sealed partial class Setup(string dataDir)
                 break;
             case "extract":
                 if (!InstallSearch.GameRunning()) throw new InvalidOperationException("Start the game first");
-                if (!PluginAlive()) throw new InvalidOperationException("The plugin isn't loaded in the game");
+                if (!GameProcess.PluginAlive()) throw new InvalidOperationException("The plugin isn't loaded in the game");
                 File.WriteAllText(System.IO.Path.Combine(Paths.ExtractPlugin, "extract-request.txt"), "");
                 File.Delete(System.IO.Path.Combine(Paths.ExtractPlugin, "extract-progress.txt"));
                 break;
@@ -152,11 +152,6 @@ internal sealed partial class Setup(string dataDir)
         return new Step("plugin", title, "ok", "Installed in Openplanet's Plugins");
     }
 
-    // the plugin rewrites it every second while loaded
-    private static bool PluginAlive()
-        => new FileInfo(System.IO.Path.Combine(Paths.ExtractPlugin, "alive.txt")) is { Exists: true } alive
-            && DateTime.UtcNow - alive.LastWriteTimeUtc < TimeSpan.FromSeconds(10);
-
     private static Step Extract(bool ready, bool running)
     {
         const string title = "Game files";
@@ -189,7 +184,7 @@ internal sealed partial class Setup(string dataDir)
                 : step with { Action = "Turn on developer mode", ActionId = "devmode" };
         if (!running) return step with { ActionEnabled = false, Note = "Start the game to extract" };
         // Openplanet loads plugins at game start: one installed or updated later isn't running yet
-        if (!PluginAlive()) return step with { ActionEnabled = false, Note = "Restart the game, or load/reload the plugin in Openplanet's Developer menu" };
+        if (!GameProcess.PluginAlive()) return step with { ActionEnabled = false, Note = "Restart the game, or load/reload the plugin in Openplanet's Developer menu" };
         return step;
     }
 

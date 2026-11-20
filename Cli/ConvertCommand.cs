@@ -10,7 +10,7 @@ internal sealed class ConvertCommand(string dataDir)
     public const string Usage = """
           convert <map.Gbx | folder>... [options]
               Convert maps to ice, each to "<map name> (ICE).Map.Gbx"; the report goes with the run (settings/runs).
-              --folder <dir>        where they go: a folder under Maps, or an absolute path (default: ICE in progress)
+              --folder <dir>        where they go: a folder under Maps, or an absolute path (default: SurfaceEditor draft)
               --name <map name>     the converted map's name (one map only); the file is named after it
               --suffix <text>       after each default name instead of "(ICE)"
               --fake-author-time    validated with a 1:00:00.000 author time, so it can go to a club without driving it

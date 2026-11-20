@@ -64,18 +64,26 @@ internal sealed class SceneMaterials(BlockCatalog shapes)
         return name;
     }
 
-    private static readonly Dictionary<string, bool?> projected = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, float[]?> texScales = new(StringComparer.OrdinalIgnoreCase);
 
-    private static bool? Projected(string texturePath)
+    private static float[]? TexCoordScale(string texturePath)
     {
-        lock (projected)
-            if (projected.TryGetValue(texturePath, out var known)) return known;
-        bool? result;
-        try { result = Gbx.ParseNode<CPlugBitmap>(texturePath).DefaultTexCoordScale is { } s ? s.X < 0.5f : null; }
+        lock (texScales)
+            if (texScales.TryGetValue(texturePath, out var known)) return known;
+        float[]? result;
+        try { result = Gbx.ParseNode<CPlugBitmap>(texturePath).DefaultTexCoordScale is { } s ? [s.X, s.Y] : null; }
         // newer bitmap versions (water, reflections) GBX.NET can't read: mapping left to the viewer's rules
         catch (Exception) { result = null; }
-        lock (projected) projected[texturePath] = result;
+        lock (texScales) texScales[texturePath] = result;
         return result;
+    }
+
+    // below 1 the texture goes by world position, that many repeats per metre
+    private static SceneTexture Texture(string role, string stem, string? image, string texPath)
+    {
+        var scale = File.Exists(texPath) ? TexCoordScale(texPath) : null;
+        var projected = scale is null ? (bool?)null : scale[0] < 0.5f;
+        return new SceneTexture(role, stem, image, projected, projected == true ? scale : null);
     }
 
     private static string? ShaderOf(string materialPath)
@@ -112,7 +120,7 @@ internal sealed class SceneMaterials(BlockCatalog shapes)
                 if (!guessed) Missing.Add(shapes.Files.RelativeToGameData(image));
                 image = null;
             }
-            textures.Add(new SceneTexture(role, stem, image, File.Exists(texPath) ? Projected(texPath) : null));
+            textures.Add(Texture(role, stem, image, texPath));
         }
         var table = refs.FirstOrDefault(f => f.EndsWith(".ColorTable.gbx.json", StringComparison.OrdinalIgnoreCase)) is { } t ? Tints(Resolve(path, ancestor, t)) : null;
         return new SceneMaterial(name, shader, textures, table);

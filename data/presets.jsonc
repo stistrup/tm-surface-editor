@@ -9,7 +9,7 @@
       { "group": "roads", "method": "custom" },
       { "group": "scenery", "method": "tops" },
       { "group": "terrain", "method": "cover" },
-      { "group": "trees", "method": "swapOnConverted" }
+      { "group": "scenery/trees/onconverted", "method": "swap" }
     ]
   }
 ]

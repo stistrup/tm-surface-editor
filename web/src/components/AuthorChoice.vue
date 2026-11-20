@@ -23,6 +23,7 @@ const storeAuthor = async () => {
   authorError.value = ''
   try {
     author.value = await saveAuthor({ login: draft.value.login.trim(), nickname: draft.value.nickname.trim(), zone: draft.value.zone.trim() })
+    meAsAuthor.value = true
     editing.value = false
   } catch (e) {
     authorError.value = e instanceof Error ? e.message : String(e)
@@ -33,14 +34,12 @@ const storeAuthor = async () => {
   }
 }
 
-// as the dialog opens: the saved account, or none (then off)
+// as the dialog opens: on with a saved account, off without
 const refresh = async () => {
   editing.value = false
   author.value = await fetchAuthor().catch(() => null)
-  if (!author.value) {
-    meAsAuthor.value = false
-    draft.value = { login: '', nickname: '', zone: '' }
-  }
+  meAsAuthor.value = author.value !== null
+  if (!author.value) draft.value = { login: '', nickname: '', zone: '' }
 }
 
 defineExpose({ refresh })

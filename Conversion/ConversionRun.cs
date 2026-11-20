@@ -36,6 +36,8 @@ internal sealed class ConversionRun
     private readonly Dictionary<(int X, int Z), int> terrainTop;
 
     public CoverArea Cover { get; }
+    // converted blocks' surfaces, set once the blocks are decided
+    public CoverSurfaces? ConvertedSurfaces { get; set; }
 
     // picks that wouldn't change a piece (blocks, items), learnt for the preview
     public Dictionary<object, HashSet<string>> CannotPick { get; } = new(ReferenceEqualityComparer.Instance);

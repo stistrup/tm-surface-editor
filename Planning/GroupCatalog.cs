@@ -10,8 +10,9 @@ internal sealed record GroupCatalog(Dictionary<string, GroupCatalog.Method> Meth
 
     public sealed record Toggle(string Label, string From, string To);
 
-    // unsupported: takes the notSupported pieces (swaps.jsonc), and only those; ground: terrain at ground level (CoverFill.AtGroundLevel)
-    public sealed record Match(List<string>? Kinds, List<string>? Waypoints, string? Name, bool Trees, bool Unsupported, bool Ground);
+    // unsupported: takes the notSupported pieces (swaps.jsonc), and only those; ground: terrain at ground level (CoverFill.AtGroundLevel);
+    // onConverted: stands on or in a converted block (CoverSurfaces.Under)
+    public sealed record Match(List<string>? Kinds, List<string>? Waypoints, string? Name, bool Trees, bool Unsupported, bool Ground, bool OnConverted);
 
     public sealed record Group(string Id, string Label, List<string>? Methods, List<Toggle>? Toggles, Match? Match, List<Group>? Children);
 
@@ -45,28 +46,28 @@ internal sealed record GroupCatalog(Dictionary<string, GroupCatalog.Method> Meth
     private static IEnumerable<(string Path, Group Group)> Paths(List<Group> groups, string parent)
         => groups.SelectMany(g => (parent == "" ? g.Id : $"{parent}/{g.Id}") is var path ? Paths(g.Children ?? [], path).Prepend((path, g)) : []);
 
-    // the first leaf that takes the piece; null: no group
-    public string? PathOf(string kind, string name, string? waypoint, bool tree, bool ground = false) => Find(Groups, "", kind, name, waypoint, tree, ground);
+    // the deepest group that takes the piece; null: no group
+    public string? PathOf(string kind, string name, string? waypoint, bool tree, bool ground = false, bool onConverted = false)
+        => Find(Groups, "", new Piece(kind, name, waypoint, tree, ground, onConverted));
 
-    private static string? Find(List<Group> groups, string parent, string kind, string name, string? waypoint, bool tree, bool ground)
+    private sealed record Piece(string Kind, string Name, string? Waypoint, bool Tree, bool Ground, bool OnConverted);
+
+    private static string? Find(List<Group> groups, string parent, Piece piece)
     {
         foreach (var g in groups)
         {
             var path = parent == "" ? g.Id : $"{parent}/{g.Id}";
-            if (g.Children is { Count: > 0 } children)
-            {
-                if (Find(children, path, kind, name, waypoint, tree, ground) is { } inner) return inner;
-                continue;
-            }
-            if (g.Match is { Unsupported: false } m && Takes(m, kind, name, waypoint, tree, ground)) return path;
+            if (g.Children is { Count: > 0 } children && Find(children, path, piece) is { } inner) return inner;
+            if (g.Match is { Unsupported: false } m && Takes(m, piece)) return path;
         }
         return null;
     }
 
-    private static bool Takes(Match m, string kind, string name, string? waypoint, bool tree, bool ground)
-        => (m.Kinds is null || m.Kinds.Contains(kind))
-            && (m.Waypoints is null || waypoint is not null && m.Waypoints.Contains(waypoint))
-            && (m.Name is null || Regex.IsMatch(name, m.Name))
-            && (!m.Trees || tree)
-            && (!m.Ground || ground);
+    private static bool Takes(Match m, Piece p)
+        => (m.Kinds is null || m.Kinds.Contains(p.Kind))
+            && (m.Waypoints is null || p.Waypoint is not null && m.Waypoints.Contains(p.Waypoint))
+            && (m.Name is null || Regex.IsMatch(p.Name, m.Name))
+            && (!m.Trees || p.Tree)
+            && (!m.Ground || p.Ground)
+            && (!m.OnConverted || p.OnConverted);
 }

@@ -36,6 +36,7 @@ public sealed class MapConverter(HashSet<string> knownBlocks, ConversionRules da
         // these read the native names
         var snow = new CoverSurfaces(map, run.Replaced.Concat(run.Customs.Keys), run.Renamed, run.Skinned, shapes, run.Look.Theme,
             b => items.ThemeNamed(rules.PieceTheme(b)).ZoneSides(rules.PieceSides(b)));
+        run.ConvertedSurfaces = snow;
         var trees = Trees.LostToBodies(run);
         PlaceNativesUnderBodies(run);
         RenameCustomBlocks(run);

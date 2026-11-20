@@ -85,6 +85,7 @@ const convert = async () => {
       overwrite: overwrite.value,
     })
     overwrite.value = false
+    folderChoice.value?.remember()
     // converting is the commitment, when asked
     if (!batch.value && saveSettings.value) void preview.save()
   } catch (e) {
@@ -191,11 +192,11 @@ const onClosed = () => {
           <span :class="$style.muted">Same name, same map in game: a new name makes a new map (its own UID).</span>
         </label>
         <div :class="$style.checks">
+          <AuthorChoice ref="authorChoice" v-model="meAsAuthor" />
           <label :class="$style.option">
             <input v-model="fakeAuthorTime" type="checkbox" />
             <span>Fake 1h author time</span>
           </label>
-          <AuthorChoice ref="authorChoice" v-model="meAsAuthor" />
           <label :class="$style.option">
             <input v-model="rebuildBlocks" type="checkbox" />
             <span>DEV: Rebuild custom blocks</span>

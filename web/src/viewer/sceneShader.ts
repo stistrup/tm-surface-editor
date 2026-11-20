@@ -1,4 +1,4 @@
-import { Color, DataTexture, DoubleSide, ShaderMaterial, Texture, Vector4 } from 'three'
+import { Color, DataTexture, DoubleSide, ShaderMaterial, Texture, Vector2, Vector4 } from 'three'
 
 // one shader for every scene material: textures by UV or projected (top, sides), terrain, block colours, glow, the cut pass
 const vertexShader = /* glsl */ `
@@ -34,6 +34,10 @@ const fragmentShader = /* glsl */ `
   uniform sampler2D mapTop;
   uniform sampler2D mapSide;
   uniform vec3 hasMap;
+  // repeats per metre of the projected maps
+  uniform vec2 tileTop;
+  uniform vec2 tileSide;
+  uniform vec2 tileHue;
   uniform vec3 baseColor;
   uniform sampler2D mapHue;
   uniform float hasHue;
@@ -62,8 +66,6 @@ const fragmentShader = /* glsl */ `
   varying float vTint;
   varying vec4 vCv;
 
-  const float TILE = 1.0 / 32.0;
-
   void main() {
     vec3 n = dot(vNormal, vNormal) > 0.0001
       ? normalize(vNormal)
@@ -87,10 +89,10 @@ const fragmentShader = /* glsl */ `
     vec2 sideUv = abs(n.x) > abs(n.z) ? vWorld.zy : vWorld.xy;
     // no top texture: flat faces take the side one from above
     if (hasMap.y < 0.5 && abs(n.y) > max(abs(n.x), abs(n.z))) sideUv = vec2(vWorld.x, -vWorld.z);
-    if (hasMap.z > 0.5) albedo = texture2D(mapSide, sideUv * TILE);
+    if (hasMap.z > 0.5) albedo = texture2D(mapSide, sideUv * tileSide);
     float up = hasMap.y > 0.5 ? smoothstep(0.55, 0.8, n.y) : 0.0;
     if (hasMap.y > 0.5) {
-      vec4 top = texture2D(mapTop, vec2(vWorld.x, -vWorld.z) * TILE);
+      vec4 top = texture2D(mapTop, vec2(vWorld.x, -vWorld.z) * tileTop);
       albedo = hasMap.x + hasMap.z > 0.5 ? mix(albedo, top, up) : top;
     }
 
@@ -101,7 +103,7 @@ const fragmentShader = /* glsl */ `
     int tint = int(vTint + 0.5);
     if (hasHue > 0.5 && tint >= 1 && tint <= 5) {
       // a projected texture's mask (…Pxz_D_HueMask) goes on as that texture does, the sides only
-      vec4 hue = hueSide > 0.5 ? texture2D(mapHue, sideUv * TILE) : texture2D(mapHue, vUv);
+      vec4 hue = hueSide > 0.5 ? texture2D(mapHue, sideUv * tileHue) : texture2D(mapHue, vUv);
       // projected walls keep their texture's brightness, the colour takes its hue (TrackWall on White = the plain DecoCliff beside it)
       vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
       vec3 repainted = hueSide > 0.5
@@ -155,6 +157,9 @@ export const flatMaterial = (color: [number, number, number]): ShaderMaterial =>
       mapTop: { value: blank },
       mapSide: { value: blank },
       hasMap: { value: new Color(0, 0, 0) },
+      tileTop: { value: new Vector2(1 / 32, 1 / 32) },
+      tileSide: { value: new Vector2(1 / 32, 1 / 32) },
+      tileHue: { value: new Vector2(1 / 32, 1 / 32) },
       baseColor: { value: new Color(...color) },
       sideColor: { value: new Color(...color) },
       terrain: { value: 0 },

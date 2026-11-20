@@ -156,7 +156,9 @@ internal sealed class PiecePlanner(string dataDir)
             Kind = "items",
             Key = itemKey,
             Picked = rulesNow.Pieces.GetValueOrDefault(Normal(itemKey)),
-            Group = groups.PathOf("items", id, run.Shapes.ItemWaypoint(id), tree: ItemSwaps.CoverSwap(run, id) is not null),
+            Group = ItemSwaps.CoverSwap(run, id) is not null
+                ? groups.PathOf("items", id, null, tree: true, onConverted: run.ConvertedSurfaces?.Under(new(position.X, position.Y, position.Z)) == true)
+                : groups.PathOf("items", id, run.Shapes.ItemWaypoint(id), tree: false),
         };
     }
 

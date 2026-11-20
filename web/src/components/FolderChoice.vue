@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { fetchFolders, type FolderList } from '../api'
+import { readText, writeText } from '../storage'
 import DropDown from './DropDown.vue'
 
 // "" = Maps itself
@@ -26,13 +27,18 @@ const useFolder = (folder: string) => {
   }
 }
 
-// as the dialog opens: the folders now, the default one chosen
+const lastKey = 'convert.lastFolder'
+
+// as the dialog opens: the folders now, the last one saved to while it still exists, else the default
 const refresh = async () => {
   list.value = await fetchFolders().catch(() => null)
-  useFolder(list.value?.progress ?? '')
+  const last = readText(lastKey)
+  useFolder(last !== null && (last === '' || folders.value.includes(last)) ? last : (list.value?.progress ?? ''))
 }
 
-defineExpose({ refresh })
+const remember = () => writeText(lastKey, target.value)
+
+defineExpose({ refresh, remember })
 </script>
 
 <template>

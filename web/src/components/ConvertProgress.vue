@@ -59,7 +59,7 @@ const stepState = (index: number): 'done' | 'now' | 'todo' => {
         </p>
       </div>
       <p v-if="job.state === 'done' && job.restartItems" :class="$style.restart" role="status">
-        {{ job.restartItems }} item{{ job.restartItems === 1 ? '' : 's' }} built while the game ran: restart likely needed
+        {{ job.restartItems }} item{{ job.restartItems === 1 ? '' : 's' }} the game couldn't reload: restart the game
       </p>
       <p v-if="job.error" :class="$style.error" role="alert">{{ job.error }}</p>
     </div>

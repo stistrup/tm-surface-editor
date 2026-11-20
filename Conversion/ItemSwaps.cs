@@ -22,7 +22,7 @@ internal static class ItemSwaps
             if (picked == "remove" || picked is null && run.Rules.RemovesItem(model.Id, at)) { removed.Add(item); Bump(run.Report.RemovedByList, model.Id); }
             else if (model.Author != "Nadeo") continue;
             else if (picked == "keep" || picked is null && run.Rules.KeepsItem(model.Id)) Bump(run.Report.KeptByList, model.Id);
-            else if (SwapTree(run, item, model, picked, snow)) { if (item.ItemModel.Id == Removed) removed.Add(item); }
+            else if (SwapTree(run, item, model, picked)) { if (item.ItemModel.Id == Removed) removed.Add(item); }
             else if (run.Items.ForItem(run.Collection, model.Id) is { } copy) PlaceCopy(run, item, model, copy, icedAt);
             else if (run.Items.Failures.ContainsKey(model.Id)) Bump(run.Report.ItemsNotConverted, model.Id);
             else if (snow.Under(at) && FlushWithSurface(run, item, snow))
@@ -34,18 +34,10 @@ internal static class ItemSwaps
         foreach (var item in removed) run.Map.AnchoredObjects!.Remove(item);
     }
 
-    // the swap tables are all vegetation; frozen: swapped whatever the options and the snow around say
-    private static bool SwapTree(ConversionRun run, CGameCtnAnchoredObject item, Ident model, string? picked, CoverSurfaces snow)
+    // the swap tables are all vegetation; only a frozen pick swaps
+    private static bool SwapTree(ConversionRun run, CGameCtnAnchoredObject item, Ident model, string? picked)
     {
-        // "<Env>:<Item>" beats the bare id
-        bool Find(Dictionary<string, string> table, out string to)
-            => table.TryGetValue($"{run.Map.Collection}:{model.Id}", out to!) || table.TryGetValue(model.Id, out to!);
-        var (trees, frozen) = (run.Rules.Options.ConvertTrees || picked == "frozen", picked == "frozen");
-        var to = "";
-        var always = trees && Find(run.DataRules.Items, out to);
-        var p = item.AbsolutePositionInMap;
-        if (!((always || trees && Find(run.DataRules.ItemsOnCover, out to)) && VariantSwap(run, item, to) is var (target, variant)
-            && (always || frozen || snow.Touches(new Vector3(p.X, p.Y, p.Z), TreeHeight(target))))) return false;
+        if (picked != "frozen" || CoverSwap(run, model.Id) is not { } to || VariantSwap(run, item, to) is not var (target, variant)) return false;
         Bump(run.Report.SwappedItems, (model.Id, target == Removed ? "(removed)" : target));
         if (target == Removed) { item.ItemModel = model with { Id = Removed }; return true; }
         item.ItemModel = model with { Id = target, Collection = new Id(26) }; // Stadium2020
@@ -107,17 +99,6 @@ internal static class ItemSwaps
 
     // Fall.Prefab, FallB.Prefab, FallC.Prefab
     private static string ClusterLetter(string prefab) => prefab[..^".Prefab".Length] is var s && char.IsUpper(s[^1]) ? s[^1..] : "";
-
-    private static float TreeHeight(string frozen) => frozen switch
-    {
-        "FrozenTreeVerySmall" => 3,
-        "FrozenTreeSmall" => 6,
-        "FrozenTreeMedium" => 10,
-        "FrozenTreeBig" => 15,
-        "FrozenTreeTall" => 20,
-        "WinterFrozenTree" => 12,
-        _ => 6,
-    };
 
     // flat top flush with ice flickers: sink it
     private const float FlushSink = 0.02f;

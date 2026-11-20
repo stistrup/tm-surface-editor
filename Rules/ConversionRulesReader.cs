@@ -56,7 +56,13 @@ internal static class ConversionRulesReader
                 foreach (var option in Object(options))
                     Read($"option {option.Name}", () =>
                     {
-                        if (!new ConvertOptions().All().Any(o => o.Name == option.Name)) throw new FormatException("unknown option");
+                        if (!new ConvertOptions().All().Any(o => o.Name == option.Name))
+                        {
+                            // an option since removed: saved settings and an open page can still carry it
+                            if (problems is null) throw new FormatException("unknown option");
+                            Console.Error.WriteLine($"settings: unknown option {option.Name}, ignored");
+                            return;
+                        }
                         if (option.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) throw new FormatException($"{option.Value} is not true/false");
                         result.Settings.Add((option.Name, option.Value.GetBoolean()));
                     });

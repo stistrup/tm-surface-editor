@@ -12,6 +12,8 @@ export interface SceneTexture {
   image: string | null
   // by world position (Py, Pxz) or by the mesh's UVs; absent: unknown
   projected?: boolean | null
+  // projected: repeats per metre (x, y)
+  tile?: [number, number] | null
 }
 
 export interface SceneMaterial {

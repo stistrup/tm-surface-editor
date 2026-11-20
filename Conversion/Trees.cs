@@ -24,7 +24,7 @@ internal static partial class Trees
                 * Matrix4x4.CreateTranslation(block.AbsolutePositionInMap!.Value.X, block.AbsolutePositionInMap.Value.Y, block.AbsolutePositionInMap.Value.Z)
             : Placement.Of(block, run.Shapes.Units(name, block.IsGround, VariantOf(block)) is { Count: > 0 } units ? (units.Max(u => u.X) + 1, units.Max(u => u.Z) + 1) : (1, 1));
         place *= Matrix4x4.CreateTranslation(0, -Placement.EnvironmentDrop(run.Collection), 0);
-        var snowed = run.Rules.Options.ConvertTrees && run.CoverBodies.Contains(block);
+        var snowed = run.CoverBodies.Contains(block);
         // the terrain it stands on doesn't count, the road over it does
         var solid = run.Shapes.CollisionTriangles(name, block.IsGround, VariantOf(block), MobilOf(block))?
             .Where(t => TerrainFaces.ShaderOf(t.Material, run.Collection) is null).ToList() ?? [];

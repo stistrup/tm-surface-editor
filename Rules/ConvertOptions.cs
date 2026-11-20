@@ -18,8 +18,6 @@ public sealed record ConvertOptions(
     bool CustomBlocks = true,
     [property: Category("piece"), Description("Starts, checkpoints and finishes as custom blocks too")]
     bool CustomWaypoints = true,
-    [property: Category("piece"), Description("Trees and plants become frozen or snowy ones")]
-    bool ConvertTrees = false,
     [property: Category("piece"), Description("Deco blocks, pillars, concrete and walls get snow")]
     bool ConvertScenery = false,
     [property: Category("map"), Description("Empty cells, the game's flat ground, get converted too")]
@@ -41,7 +39,6 @@ public sealed record ConvertOptions(
         "snowOnGroundDeco" => this with { SnowOnGroundDeco = value },
         "customBlocks" => this with { CustomBlocks = value },
         "customWaypoints" => this with { CustomWaypoints = value },
-        "convertTrees" => this with { ConvertTrees = value },
         "convertScenery" => this with { ConvertScenery = value },
         "fillEmptyWithSnow" => this with { FillEmptyWithSnow = value },
         "skinsOnly" => this with { SkinsOnly = value },

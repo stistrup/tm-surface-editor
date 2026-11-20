@@ -8,6 +8,7 @@ import {
   Texture,
   LinearMipmapLinearFilter,
   LinearFilter,
+  Vector2,
   Vector4,
   type CompressedPixelFormat,
   type Material,
@@ -26,6 +27,7 @@ interface TextureJob {
   material: ShaderMaterial
   mapping: Mapping | 'hue' | 'illum'
   path: string
+  tile?: [number, number] | null
 }
 
 // fails quietly: a material keeps its plain colour
@@ -80,7 +82,7 @@ export class SceneMaterials {
       const tints = material.uniforms.tints.value as Color[]
       source.tints.slice(0, 5).forEach((hex, i) => tints[i].setStyle(hex))
       const hue = source.textures.find((t) => t.role === 'HueMask' && t.image?.toLowerCase().endsWith('.dds'))
-      if (hue) this.extraJobs.push({ material, mapping: 'hue', path: hue.image! })
+      if (hue) this.extraJobs.push({ material, mapping: 'hue', path: hue.image!, tile: hue.tile })
       if (hue?.name.includes('Pxz')) material.uniforms.hueSide.value = 1
     }
     // some shader families read V the other way, each checked on 01 against the game: DispIn (road walls), decals (curb atlas rows);
@@ -113,6 +115,7 @@ export class SceneMaterials {
       material,
       mapping: mapping as Mapping,
       path: texture.image!,
+      tile: texture.tile,
     }))
     jobs.push(...this.extraJobs.filter((job) => job.material === material))
     for (const job of jobs) void this.apply(job)
@@ -169,6 +172,7 @@ export class SceneMaterials {
           material: this.materials[index],
           mapping: mapping as Mapping,
           path: texture.image!,
+          tile: texture.tile,
         })),
       ),
       ...this.extraJobs,
@@ -179,7 +183,7 @@ export class SceneMaterials {
     await Promise.all(Array.from({ length: 6 }, worker))
   }
 
-  private async apply({ material, mapping, path }: TextureJob) {
+  private async apply({ material, mapping, path, tile }: TextureJob) {
     const texture = await this.texture(path)
     if (!texture || this.cancelled) return
     const hasMap = material.uniforms.hasMap.value as Color
@@ -193,6 +197,7 @@ export class SceneMaterials {
     if (mapping === 'hue') {
       texture.colorSpace = NoColorSpace
       material.uniforms.mapHue.value = texture
+      if (tile) (material.uniforms.tileHue.value as Vector2).set(...tile)
       material.uniforms.hasHue.value = 1
       this.onTexture()
       return
@@ -202,9 +207,11 @@ export class SceneMaterials {
       hasMap.r = 1
     } else if (mapping === 'top') {
       material.uniforms.mapTop.value = texture
+      if (tile) (material.uniforms.tileTop.value as Vector2).set(...tile)
       hasMap.g = 1
     } else {
       material.uniforms.mapSide.value = texture
+      if (tile) (material.uniforms.tileSide.value as Vector2).set(...tile)
       hasMap.b = 1
     }
     material.visible = true

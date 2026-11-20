@@ -7,7 +7,7 @@ internal sealed class ConvertJobs(string dataDir, ConversionPreview preview)
     public sealed record Job(string Id, string Map, string Name, int Count, string State, ConvertProgress.Snapshot Progress, DateTime Started, DateTime? Ended,
         ConvertOutcome? Outcome, string? Error, List<Result> Results, bool Cancelling = false)
     {
-        // item files built while the game ran: it shows them only after a restart
+        // item files built while the game ran that the plugin couldn't reload: the game shows them only after a restart
         public int RestartItems { get; init; }
     }
 
@@ -57,7 +57,7 @@ internal sealed class ConvertJobs(string dataDir, ConversionPreview preview)
                 }
                 var outcome = maps.Count == 1 ? results.SingleOrDefault()?.Done : null;
                 var restartItems = 0;
-                try { restartItems = GameProcess.ItemsNeedingRestart(started); }
+                try { restartItems = GameProcess.RefreshInGame(GameProcess.ItemsNeedingRestart(started), TimeSpan.FromSeconds(30)).Count; }
                 catch (Exception e) { Console.Error.WriteLine($"game check: {e.Message}"); }
                 lock (gate)
                     if (job?.Id == id)

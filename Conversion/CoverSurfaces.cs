@@ -46,15 +46,6 @@ internal sealed class CoverSurfaces
         }
     }
 
-    // stands on ice, and the frozen tree wouldn't reach through ice above it
-    public bool Touches(Vector3 root, float height)
-    {
-        var hs = Heights(root).ToList();
-        return hs.Any(h => h >= root.Y - ReachBelow && h <= root.Y + OnSurface) && !hs.Any(h => h > root.Y + OnSurface && h <= root.Y + height);
-    }
-
-    private const float OnSurface = 0.5f;
-
     public bool Flush(Vector3 p) => Heights(p).Any(h => MathF.Abs(h - p.Y) <= 0.02f);
 
     private IEnumerable<float> Heights(Vector3 p)

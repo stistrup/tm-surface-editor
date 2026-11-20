@@ -153,6 +153,7 @@ void Main()
             IO::Delete(PluginFile("extract-request.txt"));
             startnew(RunDumpAll);
         }
+        if (IO::FileExists(PluginFile("refresh-request.txt"))) Refresh::FromRequest();
         sleep(1000);
     }
 }
